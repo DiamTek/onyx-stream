@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Download, CheckCircle, ArrowLeft, Film } from 'lucide-react';
+import { applyThemeFromImage, resetTheme } from '../utils/color';
 
 export default function MovieDetails() {
   const location = useLocation();
@@ -12,8 +13,13 @@ export default function MovieDetails() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    // If we wanted to check if it's already requested, we could fetch the requested list here
-  }, []);
+    if (movie?.poster_url) {
+      applyThemeFromImage(movie.poster_url);
+    }
+    return () => {
+      resetTheme();
+    };
+  }, [movie]);
 
   if (!movie) {
     return (
@@ -104,18 +110,6 @@ export default function MovieDetails() {
         }
       `}</style>
 
-      {/* Background Poster Blur */}
-      <div style={{
-        position: 'fixed',
-        inset: '-100px', // Stretch aggressively for overscroll/elastic bouncing
-        backgroundImage: movie.poster_url ? `url(${movie.poster_url})` : 'none',
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        opacity: 0.1,
-        zIndex: 0,
-        pointerEvents: 'none'
-      }} />
-
       {/* Back Button */}
       <button 
         onClick={() => navigate(-1)}
@@ -202,20 +196,20 @@ export default function MovieDetails() {
                   display: 'inline-flex',
                   alignItems: 'center',
                   gap: '0.75rem',
-                  boxShadow: '0 8px 16px rgba(139, 92, 246, 0.3)',
+                  boxShadow: '0 8px 16px var(--primary-alpha-35)',
                   transition: 'all 0.2s',
                   opacity: loading ? 0.7 : 1
                 }}
                 onMouseEnter={(e) => {
                   if (!loading) {
                     e.currentTarget.style.transform = 'translateY(-2px)';
-                    e.currentTarget.style.boxShadow = '0 12px 24px rgba(139, 92, 246, 0.4)';
+                    e.currentTarget.style.boxShadow = '0 12px 24px var(--primary-alpha-40)';
                   }
                 }}
                 onMouseLeave={(e) => {
                   if (!loading) {
                     e.currentTarget.style.transform = 'translateY(0)';
-                    e.currentTarget.style.boxShadow = '0 8px 16px rgba(139, 92, 246, 0.3)';
+                    e.currentTarget.style.boxShadow = '0 8px 16px var(--primary-alpha-35)';
                   }
                 }}
               >
