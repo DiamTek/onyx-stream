@@ -1,0 +1,8 @@
+# Ignore all contents of movies folder
+movies/*
+# Do not ignore .gitkeep
+!movies/.gitkeep
+
+node_modules/
+.env
+.DS_Store
