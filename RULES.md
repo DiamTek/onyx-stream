@@ -26,3 +26,8 @@ This document serves as the "brain" for AI agents working on this repository. Wh
 - **Frontend**: React (Vite, TypeScript, React Router).
 - **Backend**: Express/Node.js running on `http://localhost:4000`.
 - **API Strategy**: The frontend communicates via JWT Bearer tokens. Proxy logic or direct fetching is handled via standard `fetch()` or simple utilities.
+
+## 📝 Licensing & Headers
+- **AGPLv3 Compliance**: This project is strictly licensed under the GNU Affero General Public License v3.0 (AGPL-3.0).
+- **Mandatory File Headers**: Every single `.js`, `.ts`, and `.tsx` file (both frontend and backend) MUST include the full 15-line AGPLv3 copyright header block at the absolute top of the file.
+- **Header Formatting**: The header must start with `/*` and end with `*/`. There MUST be exactly one blank line after the `*/` before any import statements or code begins. Do not remove or alter existing headers.

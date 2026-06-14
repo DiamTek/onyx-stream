@@ -1,14 +1,32 @@
+/*
+ * Onyx Stream
+ * Copyright (C) 2026 DiamTek / Alexéy Shishkin
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 import { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import Landing from './pages/Landing';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
-import Player from './pages/Player';
 import Discover from './pages/Discover';
 import Settings from './pages/Settings';
 import Layout from './pages/Layout';
 import MovieDetails from './pages/MovieDetails';
+import GlobalPlayer from './components/GlobalPlayer';
 import './index.css';
 
 function AnimatedRoutes({ isAuthenticated, setIsAuthenticated }: { isAuthenticated: boolean, setIsAuthenticated: (val: boolean) => void }) {
@@ -38,9 +56,10 @@ function AnimatedRoutes({ isAuthenticated, setIsAuthenticated }: { isAuthenticat
           <Route path="/settings" element={<Settings />} />
           <Route path="/movie/:id" element={<MovieDetails />} />
         </Route>
+        {/* Dummy route to keep react-router happy, GlobalPlayer renders over it */}
         <Route 
           path="/player/:filename" 
-          element={isAuthenticated ? <Player /> : <Navigate to="/login" />} 
+          element={isAuthenticated ? <div /> : <Navigate to="/login" />} 
         />
       </Routes>
     </AnimatePresence>
@@ -56,6 +75,7 @@ function App() {
     <Router>
       <AnimatedRoutes isAuthenticated={isAuthenticated} setIsAuthenticated={setIsAuthenticated} />
       {isAuthenticated && <GlobalSearch />}
+      {isAuthenticated && <GlobalPlayer />}
     </Router>
   );
 }

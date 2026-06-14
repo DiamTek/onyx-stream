@@ -1,3 +1,21 @@
+/*
+ * Onyx Stream
+ * Copyright (C) 2026 DiamTek / Alexéy Shishkin
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
@@ -18,6 +36,23 @@ app.use(express.json());
 if (!fs.existsSync(MOVIES_DIR)) {
   fs.mkdirSync(MOVIES_DIR, { recursive: true });
 }
+
+const SKIP_TIMES_FILE = path.join(__dirname, 'skip_times.json');
+if (!fs.existsSync(SKIP_TIMES_FILE)) {
+  fs.writeFileSync(SKIP_TIMES_FILE, JSON.stringify({
+    "__TEMPLATE__YOUR_MOVIE_FILENAME_HERE.mp4": { "introEnd": 85, "outroStart": 3600 }
+  }, null, 2));
+}
+
+const getSkipTimes = () => {
+  try {
+    const data = fs.readFileSync(SKIP_TIMES_FILE, 'utf8');
+    return JSON.parse(data);
+  } catch (err) {
+    console.error('Failed to read skip_times file', err);
+    return {};
+  }
+};
 
 // Authentication Middleware
 const authenticateToken = (req, res, next) => {
@@ -50,6 +85,22 @@ app.post('/api/login', (req, res) => {
 // 2. List Movies Route
 const axios = require('axios');
 
+// Intro/Outro Specific API Route
+app.get('/api/intro/:filename', authenticateToken, (req, res) => {
+  const skipTimes = getSkipTimes();
+  const data = skipTimes[req.params.filename];
+  if (data) {
+    res.json({
+      introStart: data.introStart !== undefined ? data.introStart : null,
+      introEnd: data.introEnd !== undefined ? data.introEnd : null,
+      outroStart: data.outroStart !== undefined ? data.outroStart : null,
+      outroEnd: data.outroEnd !== undefined ? data.outroEnd : null
+    });
+  } else {
+    res.json({ introStart: null, introEnd: null, outroStart: null, outroEnd: null });
+  }
+});
+
 // Simple Memory Cache for TMDB data
 const tmdbCache = {};
 
@@ -74,13 +125,20 @@ app.get('/api/movies', authenticateToken, async (req, res) => {
         queryYear = yearMatch[2];
       }
 
+      const skipTimes = getSkipTimes();
+      const skipData = skipTimes[f] || null;
+
       const movieObj = {
         filename: f,
         title: rawTitle,
         poster_url: null,
         backdrop_url: null,
         plot: 'No description available.',
-        genres: ['Uncategorized']
+        genres: ['Uncategorized'],
+        introStart: skipData && skipData.introStart !== undefined ? skipData.introStart : null,
+        introEnd: skipData && skipData.introEnd !== undefined ? skipData.introEnd : null,
+        outroStart: skipData && skipData.outroStart !== undefined ? skipData.outroStart : null,
+        outroEnd: skipData && skipData.outroEnd !== undefined ? skipData.outroEnd : null
       };
 
       if (!TMDB_API_KEY) return movieObj;

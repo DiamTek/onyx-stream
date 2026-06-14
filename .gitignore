@@ -6,3 +6,4 @@ movies/*
 node_modules/
 .env
 .DS_Store
+backend/skip_times.json

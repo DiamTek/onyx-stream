@@ -1,7 +1,26 @@
+/*
+ * Onyx Stream
+ * Copyright (C) 2026 DiamTek / Alexéy Shishkin
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Film, Play, RefreshCw } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Cache } from '../utils/cache';
 
 interface Movie {
   filename: string;
@@ -18,7 +37,14 @@ export default function Dashboard() {
   const [movies, setMovies] = useState<Movie[]>([]);
   const [loading, setLoading] = useState(true);
   const [heroMovie, setHeroMovie] = useState<Movie | null>(null);
+  const [, setForceRender] = useState(0);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const handleProgress = () => setForceRender(prev => prev + 1);
+    window.addEventListener('videoProgressUpdated', handleProgress);
+    return () => window.removeEventListener('videoProgressUpdated', handleProgress);
+  }, []);
 
   const fetchMovies = async () => {
     setLoading(true);
@@ -149,6 +175,36 @@ export default function Dashboard() {
                   <span style={{ transform: 'translateY(1.5px)' }}>Play Now</span>
                 </button>
               </div>
+
+              {/* Progress Bar for Hero */}
+              {(() => {
+                const progressData = Cache.getVideoProgress(heroMovie.filename);
+                const isEnded = Cache.isVideoEnded(heroMovie.filename);
+                let percent = 0;
+                if (isEnded) {
+                  percent = 100;
+                } else if (progressData && progressData.duration > 0) {
+                  percent = (progressData.time / progressData.duration) * 100;
+                }
+                
+                if (percent > 0) {
+                  return (
+                    <div style={{ 
+                      position: 'absolute', bottom: 0, left: 0, right: 0, 
+                      height: '6px', background: 'rgba(255,255,255,0.1)',
+                      zIndex: 10
+                    }}>
+                      <div style={{ 
+                        height: '100%', width: `${percent}%`, 
+                        background: 'var(--primary-color)',
+                        boxShadow: '0 0 15px var(--primary-color)',
+                        borderRadius: '0 3px 3px 0'
+                      }} />
+                    </div>
+                  );
+                }
+                return null;
+              })()}
             </div>
           )}
 
@@ -233,6 +289,36 @@ export default function Dashboard() {
                           <h4 style={{ fontSize: '1rem', fontWeight: 'bold' }}>{m.title}</h4>
                         </div>
                       )}
+
+                      {/* Progress Bar */}
+                      {(() => {
+                        const progressData = Cache.getVideoProgress(m.filename);
+                        const isEnded = Cache.isVideoEnded(m.filename);
+                        let percent = 0;
+                        if (isEnded) {
+                          percent = 100;
+                        } else if (progressData && progressData.duration > 0) {
+                          percent = (progressData.time / progressData.duration) * 100;
+                        }
+                        
+                        if (percent > 0) {
+                          return (
+                            <div style={{ 
+                              position: 'absolute', bottom: 0, left: 0, right: 0, 
+                              height: '4px', background: 'rgba(255,255,255,0.1)',
+                              zIndex: 10
+                            }}>
+                              <div style={{ 
+                                height: '100%', width: `${percent}%`, 
+                                background: 'var(--primary-color)',
+                                boxShadow: '0 0 10px var(--primary-color)',
+                                borderRadius: '0 2px 2px 0'
+                              }} />
+                            </div>
+                          );
+                        }
+                        return null;
+                      })()}
                       
                       <div 
                         className="hover-overlay"

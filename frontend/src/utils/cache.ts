@@ -1,17 +1,40 @@
+/*
+ * Onyx Stream
+ * Copyright (C) 2026 DiamTek / Alexéy Shishkin
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 export const Cache = {
   // Video Progress
-  saveVideoProgress: (filename: string, time: number) => {
+  saveVideoProgress: (filename: string, time: number, duration: number) => {
     try {
-      localStorage.setItem(`progress_${filename}`, time.toString());
+      localStorage.setItem(`progress_${filename}`, JSON.stringify({ time, duration }));
+      window.dispatchEvent(new CustomEvent('videoProgressUpdated', { detail: { filename, time, duration } }));
     } catch (e) {
       console.warn('Failed to save video progress to cache', e);
     }
   },
 
-  getVideoProgress: (filename: string): number | null => {
+  getVideoProgress: (filename: string): { time: number, duration: number } | null => {
     try {
       const saved = localStorage.getItem(`progress_${filename}`);
-      return saved ? parseFloat(saved) : null;
+      if (!saved) return null;
+      if (!saved.startsWith('{')) {
+        return { time: parseFloat(saved), duration: 0 };
+      }
+      return JSON.parse(saved);
     } catch (e) {
       console.warn('Failed to read video progress from cache', e);
       return null;
@@ -45,7 +68,7 @@ export const Cache = {
   },
 
   // Global Settings
-  saveSettings: (settings: { jumpStep?: number, volume?: number, isMuted?: boolean }) => {
+  saveSettings: (settings: { jumpStep?: number, volume?: number, isMuted?: boolean, playbackSpeed?: number }) => {
     try {
       const existing = Cache.getSettings();
       localStorage.setItem('player_settings', JSON.stringify({ ...existing, ...settings }));
@@ -54,13 +77,18 @@ export const Cache = {
     }
   },
 
-  getSettings: (): { jumpStep: number, volume: number, isMuted: boolean } => {
+  getSettings: (): { jumpStep: number, volume: number, isMuted: boolean, playbackSpeed: number } => {
     try {
       const saved = localStorage.getItem('player_settings');
-      if (saved) return JSON.parse(saved);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        // Default playbackSpeed to 1 if not present in legacy cache
+        if (parsed.playbackSpeed === undefined) parsed.playbackSpeed = 1;
+        return parsed;
+      }
     } catch (e) {
       console.warn('Failed to read settings', e);
     }
-    return { jumpStep: 5, volume: 1, isMuted: false };
+    return { jumpStep: 5, volume: 1, isMuted: false, playbackSpeed: 1 };
   }
 };

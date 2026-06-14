@@ -20,6 +20,28 @@ By using this software, you agree to comply with all applicable copyright laws i
 - **Master Password Protection:** Secure access to your personal library.
 - **Fluid Video Playback:** Custom-built video player with custom controls and liquid UI elements.
 
+## Customization
+
+### Skip Intro & Outro Configuration
+Onyx Stream features dynamic "Skip Intro" and "Skip Outro" buttons that appear automatically based on metadata timestamps. Because standard metadata APIs (like TMDB) do not provide highly subjective timestamps, you can configure these manually for your personal library.
+
+1. Navigate to the `backend` directory.
+2. Open or create the `skip_times.json` file.
+3. Add the exact filename of your video and specify the timestamps in seconds:
+   ```json
+   {
+     "My Home Video 2024.mp4": {
+       "introEnd": 45,
+       "outroStart": 3600
+     }
+   }
+   ```
+   **Pro-Tip:** You don't need to specify every field! 
+   - If you omit `introStart`, it automatically defaults to `0` (the very beginning of the movie).
+   - If you omit `outroEnd`, it automatically defaults to the very end of the video file.
+
+If a video is entirely missing from `skip_times.json`, the respective buttons will gracefully remain hidden.
+
 ## Getting Started
 
 ### Prerequisites
@@ -48,6 +70,6 @@ For inquiries or support, please contact Alexéy Shishkin at: [salexey09@gmail.c
 
 ## License
 
-Copyright © 2026 DiamTek & Alexéy Shishkin.
+Copyright © 2026 DiamTek / Alexéy Shishkin.
 
-This project is licensed under the MIT License.
+This project is licensed under the GNU Affero General Public License v3.0 (AGPL-3.0). See the `LICENSE` file for details.
