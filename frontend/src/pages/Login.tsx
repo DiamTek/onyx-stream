@@ -33,7 +33,7 @@ export default function Login({ setAuth }: { setAuth: (val: boolean) => void }) 
       } else {
         setError('Invalid master password.');
       }
-    } catch (err) {
+    } catch {
       setError('Cannot connect to server.');
     }
   };

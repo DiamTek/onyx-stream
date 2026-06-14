@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Download, CheckCircle, Compass, ArrowUpRight } from 'lucide-react';
+import { CheckCircle, Compass, ArrowUpRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 
@@ -16,11 +16,7 @@ export default function Discover() {
   const navigate = useNavigate();
   const [movies, setMovies] = useState<Movie[]>([]);
   const [loading, setLoading] = useState(true);
-  const [requestedIds, setRequestedIds] = useState<Set<number>>(new Set());
-
-  useEffect(() => {
-    fetchDiscover();
-  }, []);
+  const [requestedIds] = useState<Set<number>>(new Set());
 
   const fetchDiscover = async () => {
     try {
@@ -39,25 +35,10 @@ export default function Discover() {
     }
   };
 
-  const requestMovie = async (movie: Movie) => {
-    try {
-      const token = localStorage.getItem('token');
-      const res = await fetch('http://localhost:4000/api/request', {
-        method: 'POST',
-        headers: { 
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ id: movie.id, title: movie.title })
-      });
-      if (res.ok) {
-        setRequestedIds(prev => new Set(prev).add(movie.id));
-      }
-    } catch (err) {
-      console.error('Failed to request', err);
-    }
-  };
-
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchDiscover();
+  }, []);
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.5, ease: "easeOut" }} style={{ maxWidth: '1400px', margin: '0 auto', width: '100%', paddingBottom: '4rem' }}>
       <header style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '3rem' }}>

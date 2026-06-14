@@ -379,6 +379,15 @@ body {
   background: var(--white-20);
 }
 
+/* Hide scrollbars during search */
+body.search-open *::-webkit-scrollbar-thumb,
+body.search-open *::-webkit-scrollbar-thumb:hover,
+body.search-open *::-webkit-scrollbar-track,
+body.search-open *::-webkit-scrollbar-track:hover {
+  background: transparent !important;
+  border-color: transparent !important;
+}
+
 .hide-scrollbar::-webkit-scrollbar {
   display: none;
 }
@@ -555,4 +564,15 @@ body {
 
 .animate-in {
   animation: fadeIn 0.8s ease forwards;
+}
+.search-result-item {
+  transition: var(--transition);
+}
+.search-result-item:hover {
+  background: var(--glass-heavy-overlay) !important;
+  border-color: var(--primary-color) !important;
+  transform: scale(1.02) translateZ(0) !important;
+  box-shadow: 0 10px 30px -10px rgba(0,0,0,0.5), 0 0 20px rgba(139, 92, 246, 0.2), inset 0 0 0 1px rgba(139, 92, 246, 0.3) !important;
+  z-index: 10 !important;
+  position: relative !important;
 }

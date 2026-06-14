@@ -7,7 +7,7 @@ import { Cache } from '../utils/cache';
 export default function Player() {
   const { filename } = useParams();
   const navigate = useNavigate();
-  const [token, setToken] = useState('');
+  const [token] = useState(localStorage.getItem('token') || '');
   
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -27,8 +27,8 @@ export default function Player() {
   const [settingsView, setSettingsView] = useState<'main' | 'skip_duration'>('main');
   const [jumpStep, setJumpStep] = useState(initialSettings.jumpStep);
   const [playFlash, setPlayFlash] = useState(false);
-  const hideTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const flashTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const hideTimerRef = useRef<number | null>(null);
+  const flashTimerRef = useRef<number | null>(null);
   const isScrubbingRef = useRef(false);
   const showSettingsRef = useRef(showSettings);
   const isEndedRef = useRef(isEnded);
@@ -41,15 +41,13 @@ export default function Player() {
   }, [isEnded]);
 
   const [skipIndicator, setSkipIndicator] = useState<{ amount: number, side: 'left' | 'right', id: number } | null>(null);
-  const skipTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const skipTimeoutRef = useRef<number | null>(null);
   const [volIndicator, setVolIndicator] = useState<{ volume: number, id: number } | null>(null);
-  const volTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const volTimeoutRef = useRef<number | null>(null);
 
   useEffect(() => {
-    const t = localStorage.getItem('token');
-    if (!t) navigate('/login');
-    else setToken(t);
-  }, [navigate]);
+    if (!token) navigate('/login');
+  }, [navigate, token]);
 
   useEffect(() => {
     if (videoRef.current) {
@@ -58,24 +56,25 @@ export default function Player() {
     }
   }, [initialSettings]);
 
+  const resetHideTimer = () => {
+    setShowControls(true);
+    if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
+    if (!showSettingsRef.current && !isEndedRef.current) {
+      hideTimerRef.current = window.setTimeout(() => setShowControls(false), 3000);
+    }
+  };
+
   useEffect(() => {
     showSettingsRef.current = showSettings;
     if (showSettings) {
       if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setShowControls(true);
     } else {
       resetHideTimer();
       setTimeout(() => setSettingsView('main'), 300);
     }
   }, [showSettings]);
-
-  const resetHideTimer = () => {
-    setShowControls(true);
-    if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
-    if (!showSettingsRef.current && !isEndedRef.current) {
-      hideTimerRef.current = setTimeout(() => setShowControls(false), 3000);
-    }
-  };
 
   const handleVideoClick = () => {
     if (showSettings) {
@@ -324,6 +323,7 @@ export default function Player() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [duration, volume, jumpStep, isMuted]);
 
   if (!filename || !token) return null;
@@ -570,11 +570,13 @@ export default function Player() {
                   
                   <div className="custom-slider-fill" style={{ 
                     width: `${duration ? (progress / duration) * 100 : 0}%`,
+                    // eslint-disable-next-line react-hooks/refs
                     transition: isScrubbingRef.current ? 'height 0.2s ease' : 'width 0.25s linear, height 0.2s ease'
                   }} />
                   
                   <div className="custom-slider-thumb" style={{ 
                     left: `calc(${duration ? (progress / duration) * 100 : 0}% - 7px)`,
+                    // eslint-disable-next-line react-hooks/refs
                     transition: isScrubbingRef.current ? 'transform 0.2s ease' : 'left 0.25s linear, transform 0.2s ease',
                     willChange: 'left, transform'
                   }} />

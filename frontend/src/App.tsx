@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import Landing from './pages/Landing';
@@ -11,7 +11,7 @@ import Layout from './pages/Layout';
 import MovieDetails from './pages/MovieDetails';
 import './index.css';
 
-function AnimatedRoutes({ isAuthenticated, setIsAuthenticated }: any) {
+function AnimatedRoutes({ isAuthenticated, setIsAuthenticated }: { isAuthenticated: boolean, setIsAuthenticated: (val: boolean) => void }) {
   const location = useLocation();
   
   const getLayoutKey = (path: string) => {
@@ -47,23 +47,15 @@ function AnimatedRoutes({ isAuthenticated, setIsAuthenticated }: any) {
   );
 }
 
+import GlobalSearch from './components/GlobalSearch';
+
 function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
-  const [loading, setLoading] = useState<boolean>(true);
-
-  useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      setIsAuthenticated(true);
-    }
-    setLoading(false);
-  }, []);
-
-  if (loading) return null;
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(!!localStorage.getItem('token'));
 
   return (
     <Router>
       <AnimatedRoutes isAuthenticated={isAuthenticated} setIsAuthenticated={setIsAuthenticated} />
+      {isAuthenticated && <GlobalSearch />}
     </Router>
   );
 }

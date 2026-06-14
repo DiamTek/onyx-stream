@@ -23,7 +23,7 @@ if (!fs.existsSync(MOVIES_DIR)) {
 const authenticateToken = (req, res, next) => {
   const authHeader = req.headers['authorization'];
   const token = (authHeader && authHeader.split(' ')[1]) || req.query.token;
-  
+
   if (token == null) return res.sendStatus(401);
 
   jwt.verify(token, JWT_SECRET, (err, user) => {
@@ -38,7 +38,7 @@ const authenticateToken = (req, res, next) => {
 // 1. Login Route
 app.post('/api/login', (req, res) => {
   const { password } = req.body;
-  
+
   if (password === MASTER_PASSWORD) {
     const token = jwt.sign({ role: 'admin' }, JWT_SECRET, { expiresIn: '24h' });
     res.json({ token });
@@ -58,7 +58,7 @@ app.get('/api/movies', authenticateToken, async (req, res) => {
     if (err) {
       return res.status(500).json({ error: 'Unable to scan directory' });
     }
-    
+
     const videoFiles = files.filter(f => /\.(mp4|mkv|webm)$/i.test(f));
     const TMDB_API_KEY = process.env.TMDB_API_KEY;
 
@@ -97,14 +97,14 @@ app.get('/api/movies', authenticateToken, async (req, res) => {
         const tmdbRes = await axios.get(tmdbUrl);
         if (tmdbRes.data.results && tmdbRes.data.results.length > 0) {
           const match = tmdbRes.data.results[0];
-          
+
           const tmdbGenres = {
             28: 'Action', 12: 'Adventure', 16: 'Animation', 35: 'Comedy', 80: 'Crime', 99: 'Documentary',
             18: 'Drama', 10751: 'Family', 14: 'Fantasy', 36: 'History', 27: 'Horror', 10402: 'Music',
             9648: 'Mystery', 10749: 'Romance', 878: 'Sci-Fi', 10770: 'TV Movie', 53: 'Thriller',
             10752: 'War', 37: 'Western'
           };
-          
+
           const genres = match.genre_ids ? match.genre_ids.map(id => tmdbGenres[id]).filter(Boolean) : [];
 
           const enriched = {
@@ -203,13 +203,59 @@ app.post('/api/request', authenticateToken, (req, res) => {
   if (fs.existsSync(requestFile)) {
     requests = JSON.parse(fs.readFileSync(requestFile, 'utf8'));
   }
-  
+
   if (!requests.find(r => r.id === id)) {
     requests.push({ id, title, requestedBy: req.user.username || 'admin', date: new Date().toISOString() });
     fs.writeFileSync(requestFile, JSON.stringify(requests, null, 2));
   }
-  
+
   res.json({ success: true });
+});
+
+// 5. Search TMDB Route
+app.get('/api/search', authenticateToken, async (req, res) => {
+  const query = req.query.q;
+  if (!query) return res.status(400).json({ error: 'Missing query' });
+
+  const TMDB_API_KEY = process.env.TMDB_API_KEY;
+  if (!TMDB_API_KEY) {
+    return res.status(400).json({ error: 'TMDB API Key not configured' });
+  }
+
+  try {
+    const tmdbRes = await axios.get(`https://api.themoviedb.org/3/search/multi?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(query)}`);
+
+    // Filter out people, map the rest
+    let results = tmdbRes.data.results
+      .filter(match => match.media_type !== 'person')
+      .map(match => ({
+        id: match.id,
+        title: match.title || match.name, // 'name' is used for TV shows
+        poster_url: match.poster_path ? `https://image.tmdb.org/t/p/w500${match.poster_path}` : null,
+        backdrop_url: match.backdrop_path ? `https://image.tmdb.org/t/p/w1280${match.backdrop_path}` : null,
+        plot: match.overview,
+        media_type: match.media_type
+      }));
+
+    // Custom exact-match sorter
+    const lowerQuery = query.toLowerCase();
+    results.sort((a, b) => {
+      const aTitle = (a.title || '').toLowerCase();
+      const bTitle = (b.title || '').toLowerCase();
+
+      const aExact = aTitle === lowerQuery;
+      const bExact = bTitle === lowerQuery;
+
+      if (aExact && !bExact) return -1;
+      if (!aExact && bExact) return 1;
+      return 0; // maintain TMDB's relevance sorting for the rest
+    });
+
+    res.json(results);
+  } catch (err) {
+    console.error('TMDB Search Error:', err.message);
+    res.status(500).json({ error: 'Failed to perform search' });
+  }
 });
 
 app.listen(PORT, () => {

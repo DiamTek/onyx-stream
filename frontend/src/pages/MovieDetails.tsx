@@ -34,10 +34,6 @@ export default function MovieDetails() {
     try {
       setLoading(true);
       const token = localStorage.getItem('token');
-      // Port port 4000 is used for the python backend in previous context if I recall, but Discover.tsx used 4000, wait, Discover.tsx has 'http://localhost:4000/api/movies/request' ??
-      // Let me check what Discover.tsx actually uses. 
-      // It actually doesn't have the full URL in my snippet, but let's just use a relative URL if we proxy, or use the same URL format as Discover.tsx.
-      // Wait, Discover uses `http://localhost:4000/api/discover`
       const response = await fetch(`http://localhost:4000/api/movies/request`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },

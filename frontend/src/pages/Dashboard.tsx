@@ -20,10 +20,6 @@ export default function Dashboard() {
   const [heroMovie, setHeroMovie] = useState<Movie | null>(null);
   const navigate = useNavigate();
 
-  useEffect(() => {
-    fetchMovies();
-  }, []);
-
   const fetchMovies = async () => {
     setLoading(true);
     try {
@@ -42,7 +38,7 @@ export default function Dashboard() {
         }
       } else if (res.status === 401 || res.status === 403) {
         localStorage.removeItem('token');
-        window.location.href = '/login';
+        navigate('/login');
       }
     } catch (err) {
       console.error(err);
@@ -50,6 +46,12 @@ export default function Dashboard() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchMovies();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Group movies by genre
   const moviesByGenre = movies.reduce((acc, movie) => {
@@ -77,7 +79,7 @@ export default function Dashboard() {
             background: 'linear-gradient(90deg, #fff 0%, rgba(255,255,255,0.7) 100%)',
             WebkitBackgroundClip: 'text',
             WebkitTextFillColor: 'transparent',
-            transform: 'translateY(2.5px)'
+            marginTop: '5px'
           }}>Ready to Watch</h1>
         </div>
         <button onClick={fetchMovies} className="liquid-button" style={{ padding: '0.75rem 1.5rem' }}>
@@ -190,7 +192,7 @@ export default function Dashboard() {
                     WebkitOverflowScrolling: 'touch'
                   }}
                   >
-                  {genreMovies.map((m, index) => (
+                  {genreMovies.map((m) => (
                     <div 
                       key={m.filename} 
                       className="movie-card"
