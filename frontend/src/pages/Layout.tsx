@@ -45,7 +45,7 @@ export default function Layout({ setAuth }: { setAuth: (val: boolean) => void })
 
   return (
     <div className="layout-container" style={{ display: 'flex', minHeight: '100vh', width: '100%', position: 'relative', overflow: 'hidden' }}>
-      
+
       {/* Ambient Background Flares */}
       <div style={{ position: 'absolute', top: '10vh', left: '10vw', width: '450px', height: '450px', background: 'radial-gradient(circle, rgba(59,130,246,0.15) 0%, transparent 60%)', zIndex: 0, pointerEvents: 'none', transform: 'translateZ(0)' }} />
       <div style={{ position: 'absolute', top: '60vh', right: '10vw', width: '600px', height: '600px', background: 'radial-gradient(circle, rgba(139,92,246,0.1) 0%, transparent 60%)', zIndex: 0, pointerEvents: 'none', transform: 'translateZ(0)' }} />
@@ -77,7 +77,7 @@ export default function Layout({ setAuth }: { setAuth: (val: boolean) => void })
             const isActive = location.pathname === item.path;
             const Icon = item.icon;
             return (
-              <button 
+              <button
 
                 key={item.name}
                 onClick={() => navigate(item.path)}
@@ -119,7 +119,7 @@ export default function Layout({ setAuth }: { setAuth: (val: boolean) => void })
       {/* Main Content Area */}
       <main className="main-content" style={{ flex: 1, display: 'flex', flexDirection: 'column', position: 'relative', overflowY: 'auto', overflowX: 'hidden', zIndex: 1 }}>
         <AnimatePresence mode="wait">
-          <motion.div 
+          <motion.div
             key={location.pathname}
             className="main-wrapper"
             initial={{ opacity: 0 }}
@@ -131,7 +131,7 @@ export default function Layout({ setAuth }: { setAuth: (val: boolean) => void })
             {outlet}
           </motion.div>
         </AnimatePresence>
-        
+
         {/* Footer */}
         {showFooter && (
           <footer style={{

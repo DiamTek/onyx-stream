@@ -57,7 +57,7 @@ export default function Login({ setAuth }: { setAuth: (val: boolean) => void }) 
   };
 
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
@@ -68,12 +68,12 @@ export default function Login({ setAuth }: { setAuth: (val: boolean) => void }) 
         <div style={{ padding: '1rem', background: 'var(--glass-bg)', borderRadius: '50%', border: '1px solid var(--glass-border)', boxShadow: 'inset 0 1px 0 var(--glass-highlight)' }}>
           <Lock size={36} color="var(--primary-color)" />
         </div>
-        
+
         <div style={{ textAlign: 'center' }}>
           <h2 style={{ fontSize: '1.75rem', fontWeight: 'bold', marginBottom: '0.5rem' }}>Onyx Stream</h2>
           <p style={{ color: 'var(--text-secondary)' }}>Enter the master password to access your library.</p>
         </div>
-        
+
         <form onSubmit={handleLogin} style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '1.25rem', boxSizing: 'border-box' }}>
           <input
             ref={inputRef}
@@ -95,7 +95,7 @@ export default function Login({ setAuth }: { setAuth: (val: boolean) => void }) 
             className="liquid-input"
           />
           {error && <div style={{ color: 'var(--error-color)', fontSize: '0.875rem', textAlign: 'center' }}>{error}</div>}
-          
+
           <button type="submit" className="liquid-button">
             <LogIn size={20} />
             Connect

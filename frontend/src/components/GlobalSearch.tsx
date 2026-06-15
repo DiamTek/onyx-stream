@@ -37,7 +37,7 @@ export default function GlobalSearch() {
   const navigate = useNavigate();
   const inputRef = useRef<HTMLInputElement>(null);
   const searchTimeoutRef = useRef<number | null>(null);
-  
+
   // Scroll optimization
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const scrollTimeoutRef = useRef<number | null>(null);
@@ -156,7 +156,7 @@ export default function GlobalSearch() {
           onClick={() => setIsOpen(false)}
         >
           {/* Close Button */}
-          <button 
+          <button
             onClick={() => setIsOpen(false)}
             className="liquid-button"
             style={{
@@ -202,7 +202,7 @@ export default function GlobalSearch() {
               border: '1px solid var(--white-10)'
             }}>
               <Search size={28} color="var(--primary-color)" />
-              <input 
+              <input
                 ref={inputRef}
                 type="text"
                 defaultValue=""
@@ -231,10 +231,10 @@ export default function GlobalSearch() {
 
             {/* Search Results */}
             {(results.length > 0 || (query.trim() && !loading)) && (
-              <div 
+              <div
                 ref={scrollContainerRef}
                 onScroll={handleScrollOptimization}
-                className="hide-scrollbar" 
+                className="hide-scrollbar"
                 style={{
                   display: 'flex',
                   flexDirection: 'column',

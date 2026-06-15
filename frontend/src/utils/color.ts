@@ -50,7 +50,7 @@ export function getAverageColor(imageUrl: string): Promise<RGB> {
   return new Promise((resolve, reject) => {
     const img = new Image();
     img.crossOrigin = 'Anonymous';
-    
+
     img.onload = () => {
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
@@ -62,12 +62,12 @@ export function getAverageColor(imageUrl: string): Promise<RGB> {
       // We don't need full resolution to get the average color, downscaling makes it faster
       canvas.width = 50;
       canvas.height = 75;
-      
+
       try {
         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
         const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
         const data = imageData.data;
-        
+
         let r = 0, g = 0, b = 0;
         let count = 0;
 
@@ -91,7 +91,7 @@ export function getAverageColor(imageUrl: string): Promise<RGB> {
         const avgR = r / count;
         const avgG = g / count;
         const avgB = b / count;
-        
+
         const max = Math.max(avgR, avgG, avgB);
         const boost = max < 200 ? 1.2 : 1.0;
 
@@ -106,7 +106,7 @@ export function getAverageColor(imageUrl: string): Promise<RGB> {
         resolve({ r: 139, g: 92, b: 246 });
       }
     };
-    
+
     img.onerror = () => {
       console.warn("Image load failed for color extraction.");
       resolve({ r: 139, g: 92, b: 246 });
@@ -145,7 +145,7 @@ export async function applyThemeFromImage(imageUrl: string) {
   root.style.setProperty('--primary-alpha-10', rgbaToHex(color.r, color.g, color.b, 0.1));
   root.style.setProperty('--primary-alpha-5', rgbaToHex(color.r, color.g, color.b, 0.05));
   root.style.setProperty('--primary-alpha-3', rgbaToHex(color.r, color.g, color.b, 0.03));
-  
+
   // Base colors
   root.style.setProperty('--primary-color', rgbaToHex(color.r, color.g, color.b, 1));
   root.style.setProperty('--primary-color-glow', rgbaToHex(color.r, color.g, color.b, 0.5));
@@ -157,7 +157,7 @@ export async function applyThemeFromImage(imageUrl: string) {
   // Mesh Backgrounds (Dark variants of primary)
   const dark1 = darkenRGB(color, 0.3); // Equivalent to #2a1450 from #8b5cf6
   const dark2 = darkenRGB(shiftHueRGB(color), 0.2); // Equivalent to #141b50 from #8b5cf6
-  
+
   root.style.setProperty('--bg-mesh-1', rgbaToHex(dark1.r, dark1.g, dark1.b, 0.4));
   root.style.setProperty('--bg-mesh-2', rgbaToHex(dark2.r, dark2.g, dark2.b, 0.4));
 }

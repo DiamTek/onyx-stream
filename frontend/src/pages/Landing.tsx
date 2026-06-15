@@ -24,7 +24,7 @@ export default function Landing() {
   const navigate = useNavigate();
 
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0, transition: { duration: 0.5 } }}
@@ -59,9 +59,9 @@ export default function Landing() {
         transition={{ delay: 0.2, duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
         style={{ zIndex: 1, maxWidth: '800px' }}
       >
-        <h1 style={{ 
-          fontSize: 'clamp(3rem, 8vw, 6rem)', 
-          fontWeight: '900', 
+        <h1 style={{
+          fontSize: 'clamp(3rem, 8vw, 6rem)',
+          fontWeight: '900',
           letterSpacing: 'inherit',
           lineHeight: '1.1',
           marginBottom: '1.5rem',
@@ -71,9 +71,9 @@ export default function Landing() {
         }}>
           Onyx Stream
         </h1>
-        
-        <p style={{ 
-          fontSize: 'clamp(1rem, 2vw, 1.25rem)', 
+
+        <p style={{
+          fontSize: 'clamp(1rem, 2vw, 1.25rem)',
           color: 'var(--text-secondary)',
           marginBottom: '3rem',
           maxWidth: '600px',
