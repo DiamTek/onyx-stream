@@ -369,7 +369,7 @@ export default function GlobalPlayer() {
 
         pipWin.document.body.style.margin = '0';
         pipWin.document.body.style.padding = '0';
-        pipWin.document.body.style.background = '#000';
+        pipWin.document.body.style.background = 'var(--black)';
         pipWin.document.body.style.overflow = 'hidden';
 
         const container = document.createElement('div');
@@ -557,7 +557,7 @@ export default function GlobalPlayer() {
       onClick={resetHideTimer}
       style={{ 
         height: '100vh', width: '100%', 
-        background: '#000', display: 'flex', flexDirection: 'column', 
+        background: 'var(--black)', display: 'flex', flexDirection: 'column', 
         position: 'fixed', top: 0, left: 0, overflow: 'hidden', zIndex: 9999,
         pointerEvents: (isPlayerRoute || !!docPipWindow) ? 'auto' : 'none'
       }}
@@ -623,7 +623,7 @@ export default function GlobalPlayer() {
               [skipIndicator.side]: '10%',
               width: docPipWindow ? '60px' : '90px', height: docPipWindow ? '60px' : '90px', borderRadius: '50%',
               display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '0.25rem',
-              pointerEvents: 'none', background: 'rgba(15, 15, 20, 0.9)', color: 'white',
+              pointerEvents: 'none', background: 'var(--bg-dark-alpha-90)', color: 'white',
               zIndex: 100, border: '1px solid var(--glass-border)'
             }}
           >
@@ -647,7 +647,7 @@ export default function GlobalPlayer() {
               position: 'absolute', top: docPipWindow ? 'calc(50% - 70px)' : 'calc(50% - 110px)', left: '50%',
               padding: docPipWindow ? '0.5rem 1rem' : '0.75rem 1.5rem', borderRadius: '40px',
               display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: '0.75rem',
-              pointerEvents: 'none', background: 'rgba(15, 15, 20, 0.9)', color: 'white',
+              pointerEvents: 'none', background: 'var(--bg-dark-alpha-90)', color: 'white',
               zIndex: 100, border: '1px solid var(--glass-border)',
               minWidth: docPipWindow ? '120px' : '160px'
             }}
@@ -673,7 +673,7 @@ export default function GlobalPlayer() {
               position: 'absolute', top: '50%', left: '50%',
               width: docPipWindow ? '60px' : '100px', height: docPipWindow ? '60px' : '100px', borderRadius: '50%',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              pointerEvents: 'none', background: 'rgba(15, 15, 20, 0.9)', color: 'white',
+              pointerEvents: 'none', background: 'var(--bg-dark-alpha-90)', color: 'white',
               zIndex: 40, border: '1px solid var(--glass-border)'
             }}
           >
@@ -695,7 +695,7 @@ export default function GlobalPlayer() {
               position: 'absolute', top: '50%', left: '50%',
               width: docPipWindow ? '60px' : '100px', height: docPipWindow ? '60px' : '100px', borderRadius: '50%',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              pointerEvents: 'none', background: 'rgba(15, 15, 20, 0.9)', color: 'white',
+              pointerEvents: 'none', background: 'var(--bg-dark-alpha-90)', color: 'white',
               zIndex: 40, border: '1px solid var(--glass-border)'
             }}
           >
@@ -713,7 +713,7 @@ export default function GlobalPlayer() {
             style={{
               position: 'absolute', inset: 0, zIndex: 50,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              background: 'rgba(0,0,0,0.8)',
+              background: 'var(--black-80)',
               cursor: 'pointer'
             }}
             onClick={() => {
@@ -729,7 +729,7 @@ export default function GlobalPlayer() {
               style={{
                 width: '120px', height: '120px', borderRadius: '50%',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                padding: 0, boxShadow: '0 20px 40px rgba(0,0,0,0.5), inset 0 2px 4px rgba(255,255,255,0.2)'
+                padding: 0, boxShadow: '0 20px 40px var(--black-50), inset 0 2px 4px var(--white-20)'
               }}
             >
               <Play size={48} fill="currentColor" style={{ marginLeft: '8px' }} />
@@ -853,7 +853,7 @@ export default function GlobalPlayer() {
               display: 'flex', 
               alignItems: 'center', 
               gap: docPipWindow ? '1rem' : '1.5rem', 
-              background: 'rgba(15, 15, 20, 0.9)',
+              background: 'var(--bg-dark-alpha-90)',
               ...(docPipWindow ? {
                 borderRadius: 0,
                 borderLeft: 'none',
@@ -868,16 +868,16 @@ export default function GlobalPlayer() {
               <button 
                 onClick={togglePlay} 
                 style={{ 
-                  background: 'var(--text-primary)', color: '#000', border: 'none', 
+                  background: 'var(--text-primary)', color: 'var(--black)', border: 'none', 
                   width: docPipWindow ? '28px' : '36px', height: docPipWindow ? '28px' : '36px', borderRadius: '50%', 
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   cursor: 'pointer', transition: 'transform 0.2s ease', flexShrink: 0,
-                  boxShadow: '0 4px 12px rgba(255,255,255,0.2)'
+                  boxShadow: '0 4px 12px var(--white-20)'
                 }}
                 onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
                 onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
               >
-                {isEnded ? <RotateCcw size={docPipWindow ? 14 : 18} color="#000" strokeWidth={2.5} /> : isPlaying ? <Pause size={docPipWindow ? 14 : 18} fill="#000" /> : <Play size={docPipWindow ? 14 : 18} fill="#000" style={{ marginLeft: '2px' }} />}
+                {isEnded ? <RotateCcw size={docPipWindow ? 14 : 18} color="var(--black)" strokeWidth={2.5} /> : isPlaying ? <Pause size={docPipWindow ? 14 : 18} fill="var(--black)" /> : <Play size={docPipWindow ? 14 : 18} fill="var(--black)" style={{ marginLeft: '2px' }} />}
               </button>
               
               {/* Volume */}
@@ -945,10 +945,10 @@ export default function GlobalPlayer() {
                         ref={settingsPanelRef}
                         style={{
                           position: 'absolute', bottom: 'calc(100% + 1.5rem)', right: -10,
-                          background: 'rgba(20, 20, 25, 0.9)', backdropFilter: 'blur(12px)',
+                          background: 'var(--bg-darker-alpha-90)', backdropFilter: 'blur(12px)',
                           border: '1px solid var(--glass-border)', borderRadius: '12px',
                           padding: docPipWindow ? '0.25rem' : '0.5rem', minWidth: docPipWindow ? '140px' : '180px',
-                          boxShadow: '0 10px 30px rgba(0,0,0,0.5)',
+                          boxShadow: '0 10px 30px var(--black-50)',
                           overflow: 'hidden',
                           zIndex: 999999
                         }}
@@ -970,7 +970,7 @@ export default function GlobalPlayer() {
                                     transition: 'background-color 0.2s ease', 
                                     minWidth: docPipWindow ? '180px' : '240px', whiteSpace: 'nowrap'
                                   }}
-                                onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
+                                onMouseEnter={(e) => e.currentTarget.style.background = 'var(--white-5)'}
                                 onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
                               >
                                 <span style={{ transform: 'translateY(1px)' }}>Skip Duration</span>
@@ -990,7 +990,7 @@ export default function GlobalPlayer() {
                                     transition: 'background-color 0.2s ease', 
                                     minWidth: docPipWindow ? '180px' : '240px', whiteSpace: 'nowrap'
                                   }}
-                                onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
+                                onMouseEnter={(e) => e.currentTarget.style.background = 'var(--white-5)'}
                                 onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
                               >
                                 <span style={{ transform: 'translateY(1px)' }}>Playback Speed</span>
@@ -1031,13 +1031,13 @@ export default function GlobalPlayer() {
                                     onClick={() => { setJumpStep(val); Cache.saveSettings({ jumpStep: val }); setSettingsView('main'); setShowSettings(false); }}
                                     style={{
                                       background: jumpStep === val ? 'var(--primary-color)' : 'transparent',
-                                      color: jumpStep === val ? '#fff' : 'var(--text-primary)',
+                                      color: jumpStep === val ? 'var(--white)' : 'var(--text-primary)',
                                       border: 'none', padding: docPipWindow ? '0.35rem 0.5rem' : '0.5rem 0.75rem', borderRadius: '8px',
                                       cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', 
                                       fontSize: docPipWindow ? '0.7rem' : '0.8rem',
                                       transition: 'background-color 0.2s ease'
                                     }}
-                                    onMouseEnter={(e) => { if (jumpStep !== val) e.currentTarget.style.background = 'rgba(255,255,255,0.05)' }}
+                                    onMouseEnter={(e) => { if (jumpStep !== val) e.currentTarget.style.background = 'var(--white-5)' }}
                                     onMouseLeave={(e) => { if (jumpStep !== val) e.currentTarget.style.background = 'transparent' }}
                                   >
                                     <span style={{ transform: 'translateY(1px)' }}>{val} seconds</span>
@@ -1083,13 +1083,13 @@ export default function GlobalPlayer() {
                                     }}
                                     style={{
                                       background: playbackSpeed === val ? 'var(--primary-color)' : 'transparent',
-                                      color: playbackSpeed === val ? '#fff' : 'var(--text-primary)',
+                                      color: playbackSpeed === val ? 'var(--white)' : 'var(--text-primary)',
                                       border: 'none', padding: docPipWindow ? '0.35rem 0.5rem' : '0.5rem 0.75rem', borderRadius: '8px',
                                       cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', 
                                       fontSize: docPipWindow ? '0.7rem' : '0.8rem',
                                       transition: 'background-color 0.2s ease'
                                     }}
-                                    onMouseEnter={(e) => { if (playbackSpeed !== val) e.currentTarget.style.background = 'rgba(255,255,255,0.05)' }}
+                                    onMouseEnter={(e) => { if (playbackSpeed !== val) e.currentTarget.style.background = 'var(--white-5)' }}
                                     onMouseLeave={(e) => { if (playbackSpeed !== val) e.currentTarget.style.background = 'transparent' }}
                                   >
                                     <span style={{ transform: 'translateY(1px)' }}>{val === 1 ? 'Normal' : `${val}x`}</span>

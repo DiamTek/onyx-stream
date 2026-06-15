@@ -29,7 +29,7 @@ export default function Settings() {
     >
       <header style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '3rem' }}>
         <SettingsIcon size={32} color="var(--primary-color)" />
-        <h1 style={{ fontSize: '2.5rem', fontWeight: 'bold', letterSpacing: 'inherit' }}>Settings</h1>
+        <h1 style={{ fontSize: '2.5rem', fontWeight: 'bold', letterSpacing: 'inherit', marginTop: '5px' }}>Settings</h1>
       </header>
 
       <div className="liquid-panel" style={{ padding: '3rem', textAlign: 'center' }}>

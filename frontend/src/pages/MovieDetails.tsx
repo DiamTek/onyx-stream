@@ -18,17 +18,43 @@
 
 import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { Download, CheckCircle, ArrowLeft, Film } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Download, CheckCircle, ArrowLeft, Film, Play } from 'lucide-react';
 import { applyThemeFromImage, resetTheme } from '../utils/color';
 
 export default function MovieDetails() {
   const location = useLocation();
   const navigate = useNavigate();
   const movie = location.state?.movie;
-  
+
   const [requested, setRequested] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [localFilename, setLocalFilename] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchLocal = async () => {
+      try {
+        const token = localStorage.getItem('token');
+
+        // Fetch local movies
+        const resMovies = await fetch('http://localhost:4000/api/movies', { headers: { 'Authorization': `Bearer ${token}` } });
+        if (resMovies.ok) {
+          const data = await resMovies.json();
+          const match = data.find((m: { id: number; filename: string }) => m.id === movie?.id);
+          if (match) setLocalFilename(match.filename);
+        }
+
+        // Fetch requests to see if already requested
+        const resReqs = await fetch('http://localhost:4000/api/requests', { headers: { 'Authorization': `Bearer ${token}` } });
+        if (resReqs.ok) {
+          const reqs = await resReqs.json();
+          const isRequested = reqs.some((r: { id: number }) => r.id === movie?.id);
+          if (isRequested) setRequested(true);
+        }
+      } catch { /* ignore */ }
+    };
+    if (movie?.id) fetchLocal();
+  }, [movie?.id]);
 
   useEffect(() => {
     if (movie?.poster_url) {
@@ -52,10 +78,10 @@ export default function MovieDetails() {
     try {
       setLoading(true);
       const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:4000/api/movies/request`, {
+      const response = await fetch(`http://localhost:4000/api/requests`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify({ tmdb_id: movie.id, title: movie.title })
+        body: JSON.stringify({ id: movie.id, title: movie.title })
       });
       if (response.ok) {
         setRequested(true);
@@ -68,14 +94,14 @@ export default function MovieDetails() {
   };
 
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: 20 }}
-      style={{ 
-        flex: 1, 
-        display: 'flex', 
-        flexDirection: 'column', 
+      style={{
+        flex: 1,
+        display: 'flex',
+        flexDirection: 'column',
         position: 'relative',
         minHeight: '100%',
         color: 'white'
@@ -125,11 +151,11 @@ export default function MovieDetails() {
       `}</style>
 
       {/* Back Button */}
-      <button 
+      <button
         onClick={() => navigate(-1)}
         style={{
           position: 'relative', zIndex: 10,
-          background: 'rgba(255,255,255,0.05)', border: '1px solid var(--glass-border)',
+          background: 'var(--white-5)', border: '1px solid var(--glass-border)',
           borderRadius: '50%', width: '48px', height: '48px',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           cursor: 'pointer', color: 'white',
@@ -137,11 +163,11 @@ export default function MovieDetails() {
           marginBottom: '2rem'
         }}
         onMouseEnter={(e) => {
-          e.currentTarget.style.background = 'rgba(255,255,255,0.1)';
+          e.currentTarget.style.background = 'var(--white-10)';
           e.currentTarget.style.transform = 'scale(1.05)';
         }}
         onMouseLeave={(e) => {
-          e.currentTarget.style.background = 'rgba(255,255,255,0.05)';
+          e.currentTarget.style.background = 'var(--white-5)';
           e.currentTarget.style.transform = 'scale(1)';
         }}
       >
@@ -150,7 +176,7 @@ export default function MovieDetails() {
 
       {/* Content */}
       <div className="movie-details-content" style={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'flex-start', flexWrap: 'wrap' }}>
-        
+
         {/* Poster */}
         <div className="movie-poster" style={{
           flexShrink: 0,
@@ -160,7 +186,7 @@ export default function MovieDetails() {
           backgroundPosition: 'center',
           backgroundColor: 'var(--glass-bg)',
           borderRadius: '16px',
-          boxShadow: '0 30px 60px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.1)',
+          boxShadow: '0 30px 60px var(--black-60), inset 0 1px 0 var(--white-10)',
           border: '1px solid var(--glass-border)'
         }}>
           {!movie.poster_url && (
@@ -173,64 +199,128 @@ export default function MovieDetails() {
         {/* Details */}
         <div className="details-column" style={{ flex: 1, minWidth: '300px', display: 'flex', flexDirection: 'column' }}>
           <div className="movie-title-block">
-            <h1 style={{ fontSize: 'clamp(2.5rem, 5vw, 4rem)', fontWeight: 'bold', lineHeight: '1.1', textShadow: '0 4px 12px rgba(0,0,0,0.5)', marginBottom: '0.5rem' }}>
+            <h1 style={{ fontSize: 'clamp(2.5rem, 5vw, 4rem)', fontWeight: 'bold', lineHeight: '1.1', textShadow: '0 4px 12px var(--black-50)', marginBottom: '0.5rem' }}>
               {movie.title}
             </h1>
           </div>
 
-          <div style={{ 
-            fontSize: '1.15rem', lineHeight: '1.8', color: 'rgba(255,255,255,0.85)', 
-            maxWidth: '800px', textShadow: '0 1px 2px rgba(0,0,0,0.5)',
-            background: 'rgba(15,15,20,0.7)', padding: '2rem', borderRadius: '16px',
+          <div style={{
+            fontSize: '1.15rem', lineHeight: '1.8', color: 'var(--white-85)',
+            maxWidth: '800px', textShadow: '0 1px 2px var(--black-50)',
+            background: 'var(--bg-dark-alpha-70)', padding: '2rem', borderRadius: '16px',
             border: '1px solid var(--glass-border)'
           }}>
             {movie.plot || "No description available."}
           </div>
 
-          <div style={{ marginTop: '1rem' }}>
-            {requested ? (
-              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.75rem', padding: '1rem 2.5rem', background: 'rgba(16, 185, 129, 0.15)', border: '1px solid rgba(16, 185, 129, 0.3)', borderRadius: '12px', color: '#10b981' }}>
-                <CheckCircle size={24} />
-                <span style={{ fontWeight: 'bold', fontSize: '1.1rem' }}>Request Sent</span>
-              </div>
-            ) : (
-              <button 
-                className="request-btn"
-                onClick={requestMovie}
-                disabled={loading}
-                style={{
-                  padding: '1rem 2.5rem',
-                  fontSize: '1.1rem',
-                  fontWeight: 'bold',
-                  color: 'white',
-                  background: 'var(--primary-color)',
-                  border: 'none',
-                  borderRadius: '12px',
-                  cursor: loading ? 'not-allowed' : 'pointer',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '0.75rem',
-                  boxShadow: '0 8px 16px var(--primary-alpha-35)',
-                  transition: 'all 0.2s',
-                  opacity: loading ? 0.7 : 1
-                }}
-                onMouseEnter={(e) => {
-                  if (!loading) {
+          <div style={{ marginTop: '1rem', minHeight: '56px', display: 'flex', alignItems: 'center' }}>
+            <AnimatePresence mode="wait">
+              {localFilename ? (
+                <motion.button
+                  key="watch"
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  transition={{ duration: 0.2 }}
+                  className="request-btn active-liquid-glass"
+                  onClick={() => navigate(`/player/${encodeURIComponent(localFilename)}`)}
+                  style={{
+                    padding: '1rem 2.5rem',
+                    fontSize: '1.1rem',
+                    fontWeight: 'bold',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '12px',
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.75rem',
+                    boxShadow: '0 8px 16px var(--primary-alpha-35)',
+                    transition: 'box-shadow 0.2s, transform 0.2s'
+                  }}
+                  onMouseEnter={(e) => {
                     e.currentTarget.style.transform = 'translateY(-2px)';
                     e.currentTarget.style.boxShadow = '0 12px 24px var(--primary-alpha-40)';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (!loading) {
+                  }}
+                  onMouseLeave={(e) => {
                     e.currentTarget.style.transform = 'translateY(0)';
                     e.currentTarget.style.boxShadow = '0 8px 16px var(--primary-alpha-35)';
-                  }
-                }}
-              >
-                <Download size={20} />
-                {loading ? 'Requesting...' : 'Request Movie'}
-              </button>
-            )}
+                  }}
+                >
+                  <Play size={20} fill="white" />
+                  Watch Now
+                </motion.button>
+              ) : requested ? (
+                <motion.div
+                  key="requested"
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  transition={{ duration: 0.2 }}
+                  className="request-btn"
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '0.75rem',
+                    padding: '1rem 2.5rem',
+                    background: 'var(--success-alpha-15)',
+                    border: '1px solid var(--success-alpha-30)',
+                    borderRadius: '12px',
+                    color: 'var(--success-color)',
+                    fontSize: '1.1rem',
+                    fontWeight: 'bold',
+                    boxShadow: 'none'
+                  }}
+                >
+                  <CheckCircle size={20} />
+                  <span style={{ marginTop: '3px' }}>Request Sent</span>
+                </motion.div>
+              ) : (
+                <motion.button
+                  key="request"
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  transition={{ duration: 0.2 }}
+                  className="request-btn"
+                  onClick={requestMovie}
+                  disabled={loading}
+                  style={{
+                    padding: '1rem 2.5rem',
+                    fontSize: '1.1rem',
+                    fontWeight: 'bold',
+                    color: 'white',
+                    background: 'var(--primary-color)',
+                    border: '1px solid transparent',
+                    borderRadius: '12px',
+                    cursor: loading ? 'not-allowed' : 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '0.75rem',
+                    boxShadow: '0 8px 16px var(--primary-alpha-35)',
+                    transition: 'box-shadow 0.2s, transform 0.2s, opacity 0.2s',
+                    opacity: loading ? 0.7 : 1
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!loading) {
+                      e.currentTarget.style.transform = 'translateY(-2px)';
+                      e.currentTarget.style.boxShadow = '0 12px 24px var(--primary-alpha-40)';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!loading) {
+                      e.currentTarget.style.transform = 'translateY(0)';
+                      e.currentTarget.style.boxShadow = '0 8px 16px var(--primary-alpha-35)';
+                    }
+                  }}
+                >
+                  <Download size={20} />
+                  {loading ? 'Requesting...' : 'Request Movie'}
+                </motion.button>
+              )}
+            </AnimatePresence>
           </div>
         </div>
 

@@ -17,16 +17,17 @@
  */
 
 import { useState, useRef, useEffect } from 'react';
-import { Lock, LogIn } from 'lucide-react';
+import { Shield, LogIn } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 
-export default function Login({ setAuth }: { setAuth: (val: boolean) => void }) {
+export default function AdminLogin({ setAdminUnlocked }: { setAdminUnlocked: (val: boolean) => void }) {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
-    // Autofill can happen slightly after mount
     const timer = setTimeout(() => {
       if (inputRef.current && inputRef.current.value) {
         const len = inputRef.current.value.length;
@@ -46,11 +47,17 @@ export default function Login({ setAuth }: { setAuth: (val: boolean) => void }) 
       });
       if (res.ok) {
         const { token, role } = await res.json();
-        localStorage.setItem('token', token);
-        localStorage.setItem('role', role);
-        setAuth(true);
+        if (role === 'admin') {
+          localStorage.setItem('token', token);
+          localStorage.setItem('role', role);
+          setAdminUnlocked(true);
+          // Navigate to admin instead of library natively
+          navigate('/admin');
+        } else {
+          setError('That password is for regular users, not admins.');
+        }
       } else {
-        setError('Invalid master password.');
+        setError('Invalid admin password.');
       }
     } catch {
       setError('Cannot connect to server.');
@@ -66,13 +73,13 @@ export default function Login({ setAuth }: { setAuth: (val: boolean) => void }) 
       style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', width: '100%', padding: '0 1.5rem', boxSizing: 'border-box' }}
     >
       <div className="liquid-panel" style={{ padding: 'clamp(1.5rem, 5vw, 3rem)', width: '100%', maxWidth: '420px', display: 'flex', flexDirection: 'column', gap: '2rem', alignItems: 'center', boxSizing: 'border-box' }} >
-        <div style={{ padding: '1rem', background: 'var(--glass-bg)', borderRadius: '50%', border: '1px solid var(--glass-border)', boxShadow: 'inset 0 1px 0 var(--glass-highlight)' }}>
-          <Lock size={36} color="var(--primary-color)" />
+        <div style={{ padding: '1rem', background: 'var(--success-alpha-10)', borderRadius: '50%', border: '1px solid var(--success-alpha-20)', boxShadow: 'inset 0 1px 0 var(--glass-highlight)' }}>
+          <Shield size={36} color="var(--success-color)" />
         </div>
 
         <div style={{ textAlign: 'center' }}>
-          <h2 style={{ fontSize: '1.75rem', fontWeight: 'bold', marginBottom: '0.5rem' }}>Onyx Stream</h2>
-          <p style={{ color: 'var(--text-secondary)' }}>Enter the master password to access your library.</p>
+          <h2 style={{ fontSize: '1.75rem', fontWeight: 'bold', marginBottom: '0.5rem' }}>Admin Access</h2>
+          <p style={{ color: 'var(--text-secondary)' }}>Enter the admin password to unlock management.</p>
         </div>
 
         <form onSubmit={handleLogin} style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '1.25rem', boxSizing: 'border-box' }}>
@@ -83,7 +90,7 @@ export default function Login({ setAuth }: { setAuth: (val: boolean) => void }) 
             type="password"
             autoComplete="current-password"
             autoFocus
-            placeholder="Master Password"
+            placeholder="Admin Password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             onFocus={(e) => {
@@ -97,9 +104,9 @@ export default function Login({ setAuth }: { setAuth: (val: boolean) => void }) 
           />
           {error && <div style={{ color: 'var(--error-color)', fontSize: '0.875rem', textAlign: 'center' }}>{error}</div>}
 
-          <button type="submit" className="liquid-button">
+          <button type="submit" className="liquid-button" style={{ background: 'var(--success-alpha-10)', border: '1px solid var(--success-alpha-20)' }}>
             <LogIn size={20} />
-            Connect
+            <span style={{ marginTop: '3px' }}>Unlock Panel</span>
           </button>
         </form>
       </div>

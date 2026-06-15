@@ -18,11 +18,12 @@
 
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Film, Play, RefreshCw } from 'lucide-react';
+import { Film, Play, RefreshCw, ArrowUpRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Cache } from '../utils/cache';
 
 interface Movie {
+  id?: number;
   filename: string;
   title: string;
   poster_url: string | null;
@@ -155,15 +156,15 @@ export default function Dashboard() {
                   overflow: 'hidden',
                   background: heroMovie.backdrop_url || heroMovie.poster_url
                     ? `url(${heroMovie.backdrop_url || heroMovie.poster_url}) center 20% / cover`
-                    : 'linear-gradient(135deg, rgba(139, 92, 246, 0.2) 0%, rgba(59, 130, 246, 0.2) 100%), var(--glass-bg)',
+                    : 'linear-gradient(135deg, var(--primary-alpha-20) 0%, var(--blue-alpha-20) 100%), var(--glass-bg)',
                   backgroundColor: 'var(--glass-bg)',
                   boxShadow: '0 24px 48px -12px var(--glass-shadow), inset 0 1px 0 var(--glass-highlight)'
                 }}
               >
-                <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(0deg, var(--bg-dark) 0%, rgba(0,0,0,0.4) 50%, transparent 100%)' }} />
+                <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(0deg, var(--bg-dark) 0%, var(--black-40) 50%, transparent 100%)' }} />
                 <div className="hero-panel-content" style={{ position: 'absolute', bottom: '3rem', left: '3rem', maxWidth: '600px', right: '3rem' }}>
-                  <h2 className="hero-title" style={{ fontSize: 'clamp(2rem, 5vw, 3rem)', fontWeight: 'bold', marginBottom: '1rem', lineHeight: '1.1', textShadow: '0 4px 12px rgba(0,0,0,0.8)' }}>{heroMovie.title}</h2>
-                  <p style={{ fontSize: '0.9rem', color: 'rgba(255,255,255,0.6)', fontWeight: 400, letterSpacing: '0.04em', marginBottom: '2rem', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden', textShadow: '0 2px 4px rgba(0,0,0,0.8)' }}>
+                  <h2 className="hero-title" style={{ fontSize: 'clamp(2rem, 5vw, 3rem)', fontWeight: 'bold', marginBottom: '1rem', lineHeight: '1.1', textShadow: '0 4px 12px var(--black-80)' }}>{heroMovie.title}</h2>
+                  <p style={{ fontSize: '0.9rem', color: 'var(--white-60)', fontWeight: 400, letterSpacing: '0.04em', marginBottom: '2rem', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden', textShadow: '0 2px 4px var(--black-80)' }}>
                     {heroMovie.plot}
                   </p>
                   <button
@@ -191,7 +192,7 @@ export default function Dashboard() {
                     return (
                       <div style={{
                         position: 'absolute', bottom: 0, left: 0, right: 0,
-                        height: '6px', background: 'rgba(255,255,255,0.1)',
+                        height: '6px', background: 'var(--white-10)',
                         zIndex: 10
                       }}>
                         <div style={{
@@ -265,11 +266,17 @@ export default function Dashboard() {
                           backgroundPosition: 'center',
                           backgroundColor: 'var(--glass-bg)',
                         }}
-                        onClick={() => navigate(`/player/${encodeURIComponent(m.filename)}`)}
+                        onClick={() => {
+                          if (m.id) {
+                            navigate(`/movie/${m.id}`, { state: { movie: m } });
+                          } else {
+                            navigate(`/player/${encodeURIComponent(m.filename)}`);
+                          }
+                        }}
                         onMouseEnter={(e) => {
                           if (window.matchMedia('(hover: none)').matches) return;
                           e.currentTarget.style.transform = 'translateY(-6px) scale(1.03)';
-                          e.currentTarget.style.boxShadow = '0 30px 60px -15px rgba(0,0,0,0.6), 0 0 20px rgba(139, 92, 246, 0.25), inset 0 0 0 1px rgba(139, 92, 246, 0.3)';
+                          e.currentTarget.style.boxShadow = '0 30px 60px -15px var(--black-60), 0 0 20px var(--primary-alpha-25), inset 0 0 0 1px var(--primary-alpha-30)';
                           e.currentTarget.style.zIndex = '50';
                           const overlay = e.currentTarget.querySelector('.hover-overlay') as HTMLElement;
                           if (overlay) overlay.style.opacity = '1';
@@ -286,7 +293,7 @@ export default function Dashboard() {
                       >
                         {!m.poster_url && (
                           <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem', textAlign: 'center', background: 'var(--glass-heavy-overlay)' }}>
-                            <h4 style={{ fontSize: '1rem', fontWeight: 'bold' }}>{m.title}</h4>
+                            <h3 style={{ fontSize: '1.2rem', fontWeight: 'bold' }}>{m.title}</h3>
                           </div>
                         )}
 
@@ -305,7 +312,7 @@ export default function Dashboard() {
                             return (
                               <div style={{
                                 position: 'absolute', bottom: 0, left: 0, right: 0,
-                                height: '4px', background: 'rgba(255,255,255,0.1)',
+                                height: '4px', background: 'var(--white-10)',
                                 zIndex: 10
                               }}>
                                 <div style={{
@@ -323,15 +330,19 @@ export default function Dashboard() {
                         <div
                           className="hover-overlay"
                           style={{
-                            position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.6)',
+                            position: 'absolute', inset: '-1px', background: 'var(--black-85)',
+                            borderRadius: 'inherit',
                             opacity: 0, transition: 'opacity 0.3s ease', display: 'flex', flexDirection: 'column',
-                            padding: '1.25rem', justifyContent: 'flex-end'
+                            padding: '1.5rem', justifyContent: 'flex-end'
                           }}
                         >
                           <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }}>
-                            <button style={{ padding: '1rem', borderRadius: '50%', background: 'rgba(139, 92, 246, 0.9)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 12px rgba(0,0,0,0.5)' }}>
-                              <Play size={24} fill="white" color="white" />
-                            </button>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'var(--black-80)', padding: '0.75rem 1.25rem', borderRadius: '30px', border: '1px solid var(--white-15)' }}>
+                              <span style={{ fontWeight: '600', color: 'white', fontSize: '0.9rem', letterSpacing: '0.05em' }}>
+                                {m.id ? 'View Details' : 'Watch Now'}
+                              </span>
+                              {m.id ? <ArrowUpRight size={18} color="white" /> : <Play size={18} color="white" fill="white" />}
+                            </div>
                           </div>
 
                           <h4 style={{ fontSize: '1rem', fontWeight: 'bold', marginBottom: '0.5rem', textShadow: '0 2px 4px var(--glass-shadow)' }}>{m.title}</h4>

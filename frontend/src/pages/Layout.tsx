@@ -18,7 +18,7 @@
 
 import { useState, useEffect } from 'react';
 import { useOutlet, useNavigate, useLocation } from 'react-router-dom';
-import { Film, Compass, Settings, LogOut, Disc } from 'lucide-react';
+import { Film, Compass, Settings, LogOut, Disc, Shield } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function Layout({ setAuth }: { setAuth: (val: boolean) => void }) {
@@ -47,16 +47,18 @@ export default function Layout({ setAuth }: { setAuth: (val: boolean) => void })
     <div className="layout-container" style={{ display: 'flex', minHeight: '100vh', width: '100%', position: 'relative', overflow: 'hidden' }}>
 
       {/* Ambient Background Flares */}
-      <div style={{ position: 'absolute', top: '10vh', left: '10vw', width: '450px', height: '450px', background: 'radial-gradient(circle, rgba(59,130,246,0.15) 0%, transparent 60%)', zIndex: 0, pointerEvents: 'none', transform: 'translateZ(0)' }} />
-      <div style={{ position: 'absolute', top: '60vh', right: '10vw', width: '600px', height: '600px', background: 'radial-gradient(circle, rgba(139,92,246,0.1) 0%, transparent 60%)', zIndex: 0, pointerEvents: 'none', transform: 'translateZ(0)' }} />
+      <div style={{ position: 'absolute', top: '10vh', left: '10vw', width: '450px', height: '450px', background: 'radial-gradient(circle, var(--blue-alpha-15) 0%, transparent 60%)', zIndex: 0, pointerEvents: 'none', transform: 'translateZ(0)' }} />
+      <div style={{ position: 'absolute', top: '60vh', right: '10vw', width: '600px', height: '600px', background: 'radial-gradient(circle, var(--primary-alpha-10) 0%, transparent 60%)', zIndex: 0, pointerEvents: 'none', transform: 'translateZ(0)' }} />
 
       {/* Floating Pill Sidebar */}
-      <motion.aside 
+      <motion.aside
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         className="liquid-panel sidebar-panel"
         style={{
           width: '290px',
+          minWidth: '290px',
+          flexShrink: 0,
           margin: '1.5rem',
           padding: '2rem 1.5rem',
           display: 'flex',
@@ -69,7 +71,7 @@ export default function Layout({ setAuth }: { setAuth: (val: boolean) => void })
       >
         <div className="sidebar-header" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '4rem', cursor: 'pointer', padding: '0 0.5rem' }} onClick={() => navigate('/')}>
           <Disc size={32} color="var(--primary-color)" style={{ flexShrink: 0 }} />
-          <h1 style={{ fontSize: '1.25rem', fontWeight: 'bold', letterSpacing: 'inherit', whiteSpace: 'nowrap', color: '#fff', transform: 'translateY(2px)' }}>Onyx Stream</h1>
+          <h1 style={{ fontSize: '1.25rem', fontWeight: 'bold', letterSpacing: 'inherit', whiteSpace: 'nowrap', color: 'var(--white)', transform: 'translateY(2px)' }}>Onyx Stream</h1>
         </div>
 
         <nav className="sidebar-nav" style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
@@ -86,7 +88,7 @@ export default function Layout({ setAuth }: { setAuth: (val: boolean) => void })
                   display: 'flex', alignItems: 'center', gap: '1rem',
                   padding: '1rem', borderRadius: '16px', border: 'none',
                   background: 'transparent',
-                  color: isActive ? '#fff' : 'var(--text-secondary)',
+                  color: isActive ? 'var(--white)' : 'var(--text-secondary)',
                   cursor: 'pointer', textAlign: 'left', fontWeight: isActive ? '600' : '400',
                   transition: 'var(--transition)'
                 }}
@@ -97,22 +99,39 @@ export default function Layout({ setAuth }: { setAuth: (val: boolean) => void })
             );
           })}
 
-          <button 
-            onClick={handleLogout}
-            className="sidebar-nav-item logout-btn"
-            style={{
-              display: 'flex', alignItems: 'center', gap: '1rem',
-              padding: '1rem', borderRadius: '16px', border: 'none',
-              background: 'var(--btn-bg)',
-              color: 'var(--error-color)',
-              cursor: 'pointer', textAlign: 'left',
-              marginTop: 'auto',
-              transition: 'var(--transition)'
-            }}
-          >
-            <LogOut size={20} className="sidebar-nav-icon" />
-            <span style={{ transform: 'translateY(1.5px)' }}>Sign Out</span>
-          </button>
+          <div style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+            <button
+              onClick={() => navigate('/admin')}
+              className={`sidebar-nav-item ${location.pathname === '/admin' ? 'active-liquid-glass' : ''}`}
+              style={{
+                display: 'flex', alignItems: 'center', gap: '1rem',
+                padding: '1rem', borderRadius: '16px', border: 'none',
+                background: 'transparent',
+                color: location.pathname === '/admin' ? 'var(--white)' : 'var(--text-secondary)',
+                cursor: 'pointer', textAlign: 'left', fontWeight: location.pathname === '/admin' ? '600' : '400',
+                transition: 'var(--transition)'
+              }}
+            >
+              <Shield size={20} className="sidebar-nav-icon" />
+              <span style={{ transform: 'translateY(1.5px)' }}>Admin</span>
+            </button>
+
+            <button
+              onClick={handleLogout}
+              className="sidebar-nav-item logout-btn"
+              style={{
+                display: 'flex', alignItems: 'center', gap: '1rem',
+                padding: '1rem', borderRadius: '16px', border: 'none',
+                background: 'var(--btn-bg)',
+                color: 'var(--error-color)',
+                cursor: 'pointer', textAlign: 'left',
+                transition: 'var(--transition)'
+              }}
+            >
+              <LogOut size={20} className="sidebar-nav-icon" />
+              <span style={{ transform: 'translateY(1.5px)' }}>Sign Out</span>
+            </button>
+          </div>
         </nav>
       </motion.aside>
 

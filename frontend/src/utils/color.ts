@@ -137,10 +137,13 @@ export async function applyThemeFromImage(imageUrl: string) {
   const root = document.documentElement;
 
   // Set primary alphas
+  root.style.setProperty('--primary-alpha-90', rgbaToHex(color.r, color.g, color.b, 0.9));
   root.style.setProperty('--primary-alpha-60', rgbaToHex(color.r, color.g, color.b, 0.6));
   root.style.setProperty('--primary-alpha-50', rgbaToHex(color.r, color.g, color.b, 0.5));
   root.style.setProperty('--primary-alpha-40', rgbaToHex(color.r, color.g, color.b, 0.4));
   root.style.setProperty('--primary-alpha-35', rgbaToHex(color.r, color.g, color.b, 0.35));
+  root.style.setProperty('--primary-alpha-30', rgbaToHex(color.r, color.g, color.b, 0.3));
+  root.style.setProperty('--primary-alpha-25', rgbaToHex(color.r, color.g, color.b, 0.25));
   root.style.setProperty('--primary-alpha-20', rgbaToHex(color.r, color.g, color.b, 0.2));
   root.style.setProperty('--primary-alpha-10', rgbaToHex(color.r, color.g, color.b, 0.1));
   root.style.setProperty('--primary-alpha-5', rgbaToHex(color.r, color.g, color.b, 0.05));

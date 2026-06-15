@@ -44,12 +44,12 @@ export default function Landing() {
       {/* Ambient background flares */}
       <div style={{
         position: 'absolute', top: '20%', left: '20%', width: '40vw', height: '40vw',
-        background: 'radial-gradient(circle, rgba(59,130,246,0.15) 0%, transparent 70%)',
+        background: 'radial-gradient(circle, var(--blue-alpha-15) 0%, transparent 70%)',
         filter: 'blur(60px)', zIndex: 0
       }} />
       <div style={{
         position: 'absolute', bottom: '10%', right: '10%', width: '50vw', height: '50vw',
-        background: 'radial-gradient(circle, rgba(147,51,234,0.15) 0%, transparent 70%)',
+        background: 'radial-gradient(circle, var(--purple-alpha-15) 0%, transparent 70%)',
         filter: 'blur(80px)', zIndex: 0
       }} />
 
@@ -65,7 +65,7 @@ export default function Landing() {
           letterSpacing: 'inherit',
           lineHeight: '1.1',
           marginBottom: '1.5rem',
-          background: 'linear-gradient(180deg, #FFFFFF 0%, rgba(255,255,255,0.5) 100%)',
+          background: 'linear-gradient(180deg, var(--white) 0%, var(--white-50) 100%)',
           WebkitBackgroundClip: 'text',
           WebkitTextFillColor: 'transparent'
         }}>
@@ -92,7 +92,7 @@ export default function Landing() {
             margin: '0 auto',
             padding: '1rem 2.5rem',
             fontSize: '1.1rem',
-            background: 'linear-gradient(180deg, rgba(255,255,255,0.2) 0%, transparent 100%)',
+            background: 'linear-gradient(180deg, var(--white-20) 0%, transparent 100%)',
           }}
         >
           <Play size={20} fill="currentColor" />

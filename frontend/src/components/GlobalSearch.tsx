@@ -18,7 +18,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, X, Film, RefreshCw } from 'lucide-react';
+import { Search, X, Film, RefreshCw, Play } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 interface Movie {
@@ -69,9 +69,25 @@ export default function GlobalSearch() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen]);
 
+  const [localMovies, setLocalMovies] = useState<Record<number, string>>({});
+
   // Focus input when opened
   useEffect(() => {
     if (isOpen) {
+      const fetchLocal = async () => {
+        try {
+          const token = localStorage.getItem('token');
+          const res = await fetch('http://localhost:4000/api/movies', { headers: { 'Authorization': `Bearer ${token}` } });
+          if (res.ok) {
+            const data = await res.json();
+            const map: Record<number, string> = {};
+            data.forEach((m: { id: number; filename: string }) => { if (m.id) map[m.id] = m.filename; });
+            setLocalMovies(map);
+          }
+        } catch { /* ignore */ }
+      };
+      fetchLocal();
+
       setTimeout(() => {
         if (inputRef.current) {
           inputRef.current.value = '';
@@ -127,7 +143,11 @@ export default function GlobalSearch() {
     setIsOpen(false);
     // Defer navigation until fade-out completes
     setTimeout(() => {
-      navigate(`/movie/${movie.id}`, { state: { movie } });
+      if (localMovies[movie.id]) {
+        navigate(`/player/${encodeURIComponent(localMovies[movie.id])}`);
+      } else {
+        navigate(`/movie/${movie.id}`, { state: { movie } });
+      }
     }, 250);
   };
 
@@ -151,7 +171,7 @@ export default function GlobalSearch() {
             transform: 'translateZ(0)',
             overflowY: 'auto',
             overscrollBehavior: 'contain',
-            backgroundColor: 'rgba(0,0,0,0.7)'
+            backgroundColor: 'var(--black-70)'
           }}
           onClick={() => setIsOpen(false)}
         >
@@ -188,7 +208,7 @@ export default function GlobalSearch() {
               flexDirection: 'column',
               gap: '1.5rem',
               padding: '1.5rem',
-              backgroundColor: '#00000080' // Dark tint for contrast
+              backgroundColor: 'var(--black-65)' // Dark tint for contrast
             }}
             onClick={(e) => e.stopPropagation()}
           >
@@ -287,9 +307,21 @@ export default function GlobalSearch() {
                       </div>
 
                       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                        <h3 style={{ fontSize: '1.2rem', fontWeight: 'bold', color: 'white' }}>{movie.title}</h3>
-                        <p style={{ 
-                          fontSize: '0.9rem', color: 'var(--text-secondary)', 
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                          <h3 style={{ fontSize: '1.2rem', fontWeight: 'bold', color: 'white' }}>{movie.title}</h3>
+                          {localMovies[movie.id] && (
+                            <span style={{
+                              background: 'var(--primary-color)', color: 'white',
+                              fontSize: '0.75rem', fontWeight: 'bold', padding: '0.2rem 0.6rem',
+                              borderRadius: '999px', display: 'flex', alignItems: 'center', gap: '0.25rem',
+                              boxShadow: '0 2px 8px var(--primary-alpha-40)'
+                            }}>
+                              <Play size={12} fill="white" /> Watch Now
+                            </span>
+                          )}
+                        </div>
+                        <p style={{
+                          fontSize: '0.9rem', color: 'var(--text-secondary)',
                           display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden'
                         }}>
                           {movie.plot}

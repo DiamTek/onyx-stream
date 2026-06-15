@@ -7,6 +7,39 @@
 }
 
 :root {
+  --black-40: #00000066;
+  --black-50: #00000080;
+  --black-60: #00000099;
+  --black-65: #000000a6;
+  --black-70: #000000b3;
+  --black-80: #000000cc;
+  --black-85: #000000d9;
+
+  --white-5: #ffffff0d;
+  --white-10: #ffffff1a;
+  --white-15: #ffffff26;
+  --white-20: #ffffff33;
+  --white-50: #ffffff80;
+  --white-60: #ffffff99;
+  --white-70: #ffffffb3;
+  --white-85: #ffffffd9;
+
+  --primary-alpha-10: #8b5cf61a;
+  --primary-alpha-20: #8b5cf633;
+  --primary-alpha-25: #8b5cf640;
+  --primary-alpha-30: #8b5cf64d;
+  --primary-alpha-90: #8b5cf6e6;
+
+  --success-alpha-15: #10b98126;
+  --success-alpha-30: #10b9814d;
+  --blue-alpha-15: #3b82f626;
+  --blue-alpha-20: #3b82f633;
+  --purple-alpha-15: #9333ea26;
+
+  --bg-dark-alpha-70: #0f0f14b3;
+  --bg-dark-alpha-90: #0f0f14e6;
+  --bg-darker-alpha-90: #141419e6;
+
   --white-2: #ffffff05;
   --white-5: #ffffff0d;
   --black-40: #00000066;
@@ -52,6 +85,11 @@
   --primary-color: #8b5cf6;
   --primary-color-glow: #8b5cf680;
   --error-color: #ef4444;
+  --success-color: #10b981;
+  --success-alpha-10: #10b9811a;
+  --success-alpha-20: #10b98133;
+  --success-alpha-30: #10b9814d;
+  --error-alpha-30: #ef44444d;
 
   --text-primary: #ffffffff;
   --text-secondary: #ffffff80;
@@ -571,14 +609,16 @@ body.search-open *::-webkit-scrollbar-track:hover {
 .animate-in {
   animation: fadeIn 0.8s ease forwards;
 }
+
 .search-result-item {
   transition: var(--transition);
 }
+
 .search-result-item:hover {
   background: var(--glass-heavy-overlay) !important;
   border-color: var(--primary-color) !important;
   transform: scale(1.02) translateZ(0) !important;
-  box-shadow: 0 10px 30px -10px rgba(0,0,0,0.5), 0 0 20px rgba(139, 92, 246, 0.2), inset 0 0 0 1px rgba(139, 92, 246, 0.3) !important;
+  box-shadow: 0 10px 30px -10px var(--black-50), 0 0 20px var(--primary-alpha-20), inset 0 0 0 1px var(--primary-alpha-30) !important;
   z-index: 10 !important;
   position: relative !important;
 }
@@ -589,4 +629,20 @@ body.search-open *::-webkit-scrollbar-track:hover {
   grid-auto-flow: column;
   gap: 0.25rem;
   width: max-content;
+}
+
+/* Danger Liquid Button (like logout) */
+.danger-liquid-button {
+  background: var(--error-alpha-5) !important;
+  color: #ff3b30 !important;
+  border: 1px solid transparent !important;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.danger-liquid-button:hover {
+  background: var(--error-alpha-10) !important;
+  color: #ff453a !important;
+  transform: translateY(-2px) translateZ(0) !important;
+  border-color: var(--error-alpha-20) !important;
+  box-shadow: 0 4px 12px var(--error-alpha-10) !important;
 }

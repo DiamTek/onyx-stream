@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import Landing from './pages/Landing';
@@ -26,12 +26,19 @@ import Discover from './pages/Discover';
 import Settings from './pages/Settings';
 import Layout from './pages/Layout';
 import MovieDetails from './pages/MovieDetails';
+import Admin from './pages/Admin';
 import GlobalPlayer from './components/GlobalPlayer';
 import './index.css';
 
-function AnimatedRoutes({ isAuthenticated, setIsAuthenticated }: { isAuthenticated: boolean, setIsAuthenticated: (val: boolean) => void }) {
+function AnimatedRoutes({ isAuthenticated, setIsAuthenticated, isAdminUnlocked, setIsAdminUnlocked }: { isAuthenticated: boolean, setIsAuthenticated: (val: boolean) => void, isAdminUnlocked: boolean, setIsAdminUnlocked: (val: boolean) => void }) {
   const location = useLocation();
-  
+
+  useEffect(() => {
+    if (!location.pathname.startsWith('/admin') && isAdminUnlocked) {
+      setIsAdminUnlocked(false);
+    }
+  }, [location.pathname, isAdminUnlocked, setIsAdminUnlocked]);
+
   const getLayoutKey = (path: string) => {
     if (path === '/' || path === '/login') return 'auth';
     if (path.startsWith('/player')) return 'player';
@@ -41,25 +48,30 @@ function AnimatedRoutes({ isAuthenticated, setIsAuthenticated }: { isAuthenticat
   return (
     <AnimatePresence mode="wait">
       <Routes location={location} key={getLayoutKey(location.pathname)}>
-        <Route 
-          path="/" 
-          element={!isAuthenticated ? <Landing /> : <Navigate to="/library" />} 
+        <Route
+          path="/"
+          element={!isAuthenticated ? <Landing /> : <Navigate to="/library" />}
         />
-        <Route 
-          path="/login" 
-          element={!isAuthenticated ? <Login setAuth={setIsAuthenticated} /> : <Navigate to="/library" />} 
+        <Route
+          path="/login"
+          element={!isAuthenticated ? <Login setAuth={setIsAuthenticated} /> : <Navigate to="/library" />}
+        />
+        <Route
+          path="/admin/login"
+          element={!isAdminUnlocked ? <AdminLogin setAdminUnlocked={setIsAdminUnlocked} /> : <Navigate to="/admin" />}
         />
         {/* Protected Routes inside Layout */}
         <Route element={isAuthenticated ? <Layout setAuth={setIsAuthenticated} /> : <Navigate to="/login" />}>
           <Route path="/library" element={<Dashboard />} />
           <Route path="/discover" element={<Discover />} />
           <Route path="/settings" element={<Settings />} />
+          <Route path="/admin" element={isAdminUnlocked ? <Admin /> : <Navigate to="/admin/login" />} />
           <Route path="/movie/:id" element={<MovieDetails />} />
         </Route>
         {/* Dummy route to keep react-router happy, GlobalPlayer renders over it */}
-        <Route 
-          path="/player/:filename" 
-          element={isAuthenticated ? <div /> : <Navigate to="/login" />} 
+        <Route
+          path="/player/:filename"
+          element={isAuthenticated ? <div /> : <Navigate to="/login" />}
         />
       </Routes>
     </AnimatePresence>
@@ -67,13 +79,20 @@ function AnimatedRoutes({ isAuthenticated, setIsAuthenticated }: { isAuthenticat
 }
 
 import GlobalSearch from './components/GlobalSearch';
+import AdminLogin from './pages/AdminLogin';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(!!localStorage.getItem('token'));
+  const [isAdminUnlocked, setIsAdminUnlocked] = useState<boolean>(false);
+
+  // Listen to auth changes so we can re-evaluate role
+  const handleAuthChange = (val: boolean) => {
+    setIsAuthenticated(val);
+  };
 
   return (
     <Router>
-      <AnimatedRoutes isAuthenticated={isAuthenticated} setIsAuthenticated={setIsAuthenticated} />
+      <AnimatedRoutes isAuthenticated={isAuthenticated} setIsAuthenticated={handleAuthChange} isAdminUnlocked={isAdminUnlocked} setIsAdminUnlocked={setIsAdminUnlocked} />
       {isAuthenticated && <GlobalSearch />}
       {isAuthenticated && <GlobalPlayer />}
     </Router>

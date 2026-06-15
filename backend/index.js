@@ -22,11 +22,14 @@ const cors = require('cors');
 const fs = require('fs');
 const path = require('path');
 const jwt = require('jsonwebtoken');
+const axios = require('axios');
+const multer = require('multer');
 
 const app = express();
 const PORT = process.env.PORT || 4000;
 const JWT_SECRET = process.env.JWT_SECRET || 'super-secret-key';
 const MASTER_PASSWORD = process.env.MASTER_PASSWORD || 'admin123';
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123';
 const MOVIES_DIR = path.join(__dirname, '..', 'movies');
 
 app.use(cors());
@@ -54,16 +57,24 @@ const getSkipTimes = () => {
   }
 };
 
-// Authentication Middleware
 const authenticateToken = (req, res, next) => {
   const authHeader = req.headers['authorization'];
   const token = (authHeader && authHeader.split(' ')[1]) || req.query.token;
-
-  if (token == null) return res.sendStatus(401);
+  
+  if (!token) return res.status(401).json({ error: 'Missing token' });
 
   jwt.verify(token, JWT_SECRET, (err, user) => {
-    if (err) return res.sendStatus(403);
+    if (err) return res.status(403).json({ error: 'Invalid token' });
     req.user = user;
+    next();
+  });
+};
+
+const authenticateAdmin = (req, res, next) => {
+  authenticateToken(req, res, () => {
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ error: 'Admin access required' });
+    }
     next();
   });
 };
@@ -73,17 +84,28 @@ const authenticateToken = (req, res, next) => {
 // 1. Login Route
 app.post('/api/login', (req, res) => {
   const { password } = req.body;
-
-  if (password === MASTER_PASSWORD) {
+  if (password === ADMIN_PASSWORD) {
     const token = jwt.sign({ role: 'admin' }, JWT_SECRET, { expiresIn: '24h' });
-    res.json({ token });
+    res.json({ token, role: 'admin' });
+  } else if (password === MASTER_PASSWORD) {
+    const token = jwt.sign({ role: 'user' }, JWT_SECRET, { expiresIn: '24h' });
+    res.json({ token, role: 'user' });
   } else {
     res.status(401).json({ error: 'Invalid password' });
   }
 });
 
-// 2. List Movies Route
-const axios = require('axios');
+// Multer Config
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, MOVIES_DIR);
+  },
+  filename: (req, file, cb) => {
+    const finalName = req.body.filename || file.originalname;
+    cb(null, finalName);
+  }
+});
+const upload = multer({ storage });
 
 // Intro/Outro Specific API Route
 app.get('/api/intro/:filename', authenticateToken, (req, res) => {
@@ -166,6 +188,7 @@ app.get('/api/movies', authenticateToken, async (req, res) => {
           const genres = match.genre_ids ? match.genre_ids.map(id => tmdbGenres[id]).filter(Boolean) : [];
 
           const enriched = {
+            id: match.id,
             title: match.title || rawTitle,
             poster_url: match.poster_path ? `https://image.tmdb.org/t/p/w500${match.poster_path}` : null,
             backdrop_url: match.backdrop_path ? `https://image.tmdb.org/t/p/w1280${match.backdrop_path}` : null,
@@ -252,7 +275,7 @@ app.get('/api/discover', authenticateToken, async (req, res) => {
 });
 
 // 4. Request Movie Route
-app.post('/api/request', authenticateToken, (req, res) => {
+app.post('/api/requests', authenticateToken, (req, res) => {
   const { id, title } = req.body;
   if (!id || !title) return res.status(400).json({ error: 'Missing id or title' });
 
@@ -268,6 +291,55 @@ app.post('/api/request', authenticateToken, (req, res) => {
   }
 
   res.json({ success: true });
+});
+
+// Admin: Get all requests
+app.get('/api/requests', authenticateToken, (req, res) => {
+  const requestFile = path.join(__dirname, 'requests.json');
+  if (fs.existsSync(requestFile)) {
+    const requests = JSON.parse(fs.readFileSync(requestFile, 'utf8'));
+    res.json(requests);
+  } else {
+    res.json([]);
+  }
+});
+
+// Admin: Delete a request
+app.delete('/api/requests/:id', authenticateAdmin, (req, res) => {
+  const requestFile = path.join(__dirname, 'requests.json');
+  if (fs.existsSync(requestFile)) {
+    let requests = JSON.parse(fs.readFileSync(requestFile, 'utf8'));
+    requests = requests.filter(r => r.id.toString() !== req.params.id.toString());
+    fs.writeFileSync(requestFile, JSON.stringify(requests, null, 2));
+  }
+  res.json({ success: true });
+});
+
+// Admin: Upload a movie
+app.post('/api/admin/upload', authenticateAdmin, upload.single('movie'), (req, res) => {
+  if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
+  
+  const { requestId, introEnd, outroStart } = req.body;
+  if (requestId) {
+    const requestFile = path.join(__dirname, 'requests.json');
+    if (fs.existsSync(requestFile)) {
+      let requests = JSON.parse(fs.readFileSync(requestFile, 'utf8'));
+      requests = requests.filter(r => r.id.toString() !== requestId.toString());
+      fs.writeFileSync(requestFile, JSON.stringify(requests, null, 2));
+    }
+  }
+
+  // Handle Skip Times
+  if (introEnd || outroStart) {
+    const filename = req.file.filename;
+    const skipTimes = getSkipTimes();
+    if (!skipTimes[filename]) skipTimes[filename] = {};
+    if (introEnd) skipTimes[filename].introEnd = parseInt(introEnd, 10);
+    if (outroStart) skipTimes[filename].outroStart = parseInt(outroStart, 10);
+    fs.writeFileSync(SKIP_TIMES_FILE, JSON.stringify(skipTimes, null, 2));
+  }
+
+  res.json({ success: true, message: 'Movie uploaded successfully' });
 });
 
 // 5. Search TMDB Route

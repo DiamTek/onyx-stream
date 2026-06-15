@@ -21,6 +21,12 @@ This document serves as the "brain" for AI agents working on this repository. Wh
 - **Scroll-Hover Jank**: Scrolling rapidly across lists of complex items (with heavy `:hover` effects like `scale` or multi-layered `box-shadow`) triggers massive GPU paint storms. Always attach a React `onScroll` listener to temporarily apply `pointer-events: none` to the scrollable container, reactivating it via `setTimeout` when scrolling stops.
 - **Scrollbar Layout Shifts**: Hiding the body scrollbar (`overflow: hidden`) to lock background scrolling causes immediate layout shifts. Mitigate this by dynamically calculating the active scroll container's scrollbar width (`element.offsetWidth - element.clientWidth`) and applying it as `padding-right` before freezing the overflow.
 - **Passive Scroll Listeners**: Never attach non-passive `onWheel` or `onTouchMove` event listeners in React purely to call `e.stopPropagation()`. They pause the browser's hardware scroll compositor thread and induce severe scrolling latency.
+- **Modal Scroll Locking & Portals**: When rendering fixed full-screen overlays (modals), do not rely purely on `overflow: hidden` on the body if the modal is nested within layout wrappers (like framer-motion containers) which can trap `position: fixed`. Always use `createPortal(<Modal />, document.body)` to beam the overlay out of its container. For the scroll lock itself, set the portal wrapper to `position: fixed, inset: 0, overflow-y: auto, overscroll-behavior: contain`. This physically traps scroll momentum inside the modal wrapper without requiring any JavaScript scroll listeners or `body.overflow` hacks that cause layout twitches.
+
+## 🎛️ UI Elements & Buttons
+- **Liquid Buttons**: All interactive buttons MUST use the `liquid-button` CSS class to ensure they inherit the dynamic animated gradient hover effects and glassy aesthetic.
+- **Danger States**: Destructive actions (Dismiss, Delete, Sign Out) must use the `.danger-liquid-button` class (or `.logout-btn`) which inherits the liquid glass aesthetic but uses a red tint (`--error-color`) and specific hover mechanics (`transform: translateY(-2px)`).
+- **Disabled States**: Disabled buttons should not just use HTML `disabled`. They must use inline React styles `pointerEvents: 'none'` to completely strip the element of hover physics (glow, transform) while in an inactive state, along with `opacity: 0.5`.
 
 ## 🔌 Architecture
 - **Frontend**: React (Vite, TypeScript, React Router).
