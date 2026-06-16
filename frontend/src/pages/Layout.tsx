@@ -18,7 +18,7 @@
 
 import { useState, useEffect } from 'react';
 import { useOutlet, useNavigate, useLocation } from 'react-router-dom';
-import { Film, Compass, Settings, LogOut, Disc, Shield } from 'lucide-react';
+import { Film, Compass, Settings, LogOut, Disc, Shield, ChevronUp } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function Layout({ setAuth }: { setAuth: (val: boolean) => void }) {
@@ -27,6 +27,7 @@ export default function Layout({ setAuth }: { setAuth: (val: boolean) => void })
   const outlet = useOutlet();
 
   const [showFooter, setShowFooter] = useState(false);
+  const [showMoreMenu, setShowMoreMenu] = useState(false);
   useEffect(() => {
     const timer = setTimeout(() => setShowFooter(true), 1500);
     return () => clearTimeout(timer);
@@ -99,7 +100,8 @@ export default function Layout({ setAuth }: { setAuth: (val: boolean) => void })
             );
           })}
 
-          <div style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+          {/* Desktop-only Admin and Sign Out (existing layout) */}
+          <div className="desktop-only" style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
             <button
               onClick={() => navigate('/admin')}
               className={`sidebar-nav-item ${location.pathname === '/admin' ? 'active-liquid-glass' : ''}`}
@@ -123,7 +125,7 @@ export default function Layout({ setAuth }: { setAuth: (val: boolean) => void })
                 display: 'flex', alignItems: 'center', gap: '1rem',
                 padding: '1rem', borderRadius: '16px', border: 'none',
                 background: 'var(--btn-bg)',
-                color: 'var(--error-color)',
+                color: 'var(--error-color-bright)',
                 cursor: 'pointer', textAlign: 'left',
                 transition: 'var(--transition)'
               }}
@@ -131,6 +133,116 @@ export default function Layout({ setAuth }: { setAuth: (val: boolean) => void })
               <LogOut size={20} className="sidebar-nav-icon" />
               <span style={{ transform: 'translateY(1.5px)' }}>Sign Out</span>
             </button>
+          </div>
+
+          {/* Mobile-only More Dropup menu */}
+          <div className="mobile-only" style={{ position: 'relative', width: '100%' }}>
+            <button
+              onClick={() => setShowMoreMenu(prev => !prev)}
+              className={`sidebar-nav-item ${showMoreMenu ? 'active-liquid-glass' : ''}`}
+              style={{
+                display: 'flex', alignItems: 'center', gap: '1rem',
+                padding: '1rem', borderRadius: '16px', border: 'none',
+                background: 'transparent',
+                color: showMoreMenu ? 'var(--white)' : 'var(--text-secondary)',
+                cursor: 'pointer', textAlign: 'left', fontWeight: showMoreMenu ? '600' : '400',
+                transition: 'var(--transition)',
+                width: '100%'
+              }}
+            >
+              <ChevronUp size={20} className="sidebar-nav-icon" style={{ transform: showMoreMenu ? 'rotate(180deg)' : 'none', transition: 'transform 0.3s ease' }} />
+              <span style={{ transform: 'translateY(1.5px)' }}>More</span>
+            </button>
+
+            <AnimatePresence>
+              {showMoreMenu && (
+                <>
+                  {/* Backdrop overlay to close menu on tap outside */}
+                  <div
+                    style={{ position: 'fixed', inset: 0, zIndex: 99, background: 'transparent' }}
+                    onClick={() => setShowMoreMenu(false)}
+                  />
+                  <motion.div
+                    initial={{ opacity: 0, y: 15, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 15, scale: 0.95 }}
+                    transition={{ duration: 0.2, ease: "easeOut" }}
+                    className="liquid-panel"
+                    style={{
+                      position: 'absolute',
+                      bottom: '120%',
+                      right: '0',
+                      left: 'auto',
+                      width: '160px',
+                      zIndex: 100,
+                      background: 'var(--black-85)',
+                      border: '1px solid var(--glass-border)',
+                      borderRadius: '16px',
+                      padding: '0.5rem',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '0.25rem',
+                      boxShadow: '0 10px 25px rgba(0,0,0,0.5)',
+                      backdropFilter: 'blur(20px)',
+                      WebkitBackdropFilter: 'blur(20px)'
+                    }}
+                  >
+                    <button
+                      onClick={() => {
+                        setShowMoreMenu(false);
+                        navigate('/admin');
+                      }}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: '0.75rem',
+                        padding: '0.75rem 1rem', borderRadius: '12px', border: 'none',
+                        background: location.pathname === '/admin' ? 'var(--primary-alpha-20)' : 'transparent',
+                        color: location.pathname === '/admin' ? 'var(--white)' : 'var(--text-secondary)',
+                        cursor: 'pointer', textAlign: 'left', fontSize: '0.9rem',
+                        width: '100%', fontWeight: location.pathname === '/admin' ? '600' : '400',
+                        transition: 'var(--transition)'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = 'var(--white-5)';
+                        e.currentTarget.style.color = 'var(--white)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = location.pathname === '/admin' ? 'var(--primary-alpha-20)' : 'transparent';
+                        e.currentTarget.style.color = location.pathname === '/admin' ? 'var(--white)' : 'var(--text-secondary)';
+                      }}
+                    >
+                      <Shield size={18} />
+                      <span style={{ transform: 'translateY(1px)' }}>Admin</span>
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowMoreMenu(false);
+                        handleLogout();
+                      }}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: '0.75rem',
+                        padding: '0.75rem 1rem', borderRadius: '12px', border: 'none',
+                        background: 'var(--error-alpha-5)',
+                        color: 'var(--error-color-bright)',
+                        cursor: 'pointer', textAlign: 'left', fontSize: '0.9rem',
+                        width: '100%', fontWeight: '500',
+                        transition: 'var(--transition)'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = 'var(--error-color-hover)';
+                        e.currentTarget.style.color = 'var(--white)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = 'var(--error-alpha-5)';
+                        e.currentTarget.style.color = 'var(--error-color-bright)';
+                      }}
+                    >
+                      <LogOut size={18} />
+                      <span style={{ transform: 'translateY(1px)' }}>Sign Out</span>
+                    </button>
+                  </motion.div>
+                </>
+              )}
+            </AnimatePresence>
           </div>
         </nav>
       </motion.aside>

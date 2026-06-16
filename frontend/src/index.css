@@ -679,6 +679,11 @@ body.search-open *::-webkit-scrollbar-track:hover {
   text-align: left;
 }
 
+/* Responsive visibility utilities */
+.mobile-only {
+  display: none !important;
+}
+
 @media (max-width: 768px) {
   .settings-storage-row {
     flex-direction: column;
@@ -695,5 +700,13 @@ body.search-open *::-webkit-scrollbar-track:hover {
     right: -10px;
     transform: none;
     width: 260px;
+  }
+
+  .mobile-only {
+    display: flex !important;
+  }
+
+  .desktop-only {
+    display: none !important;
   }
 }
