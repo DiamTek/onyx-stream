@@ -60,7 +60,7 @@ const getSkipTimes = () => {
 const authenticateToken = (req, res, next) => {
   const authHeader = req.headers['authorization'];
   const token = (authHeader && authHeader.split(' ')[1]) || req.query.token;
-  
+
   if (!token) return res.status(401).json({ error: 'Missing token' });
 
   jwt.verify(token, JWT_SECRET, (err, user) => {
@@ -190,8 +190,8 @@ app.get('/api/movies', authenticateToken, async (req, res) => {
           const enriched = {
             id: match.id,
             title: match.title || rawTitle,
-            poster_url: match.poster_path ? `https://image.tmdb.org/t/p/w500${match.poster_path}` : null,
-            backdrop_url: match.backdrop_path ? `https://image.tmdb.org/t/p/w1280${match.backdrop_path}` : null,
+            poster_url: match.poster_path ? `https://wsrv.nl/?url=image.tmdb.org/t/p/w500${match.poster_path}` : null,
+            backdrop_url: match.backdrop_path ? `https://wsrv.nl/?url=image.tmdb.org/t/p/w1280${match.backdrop_path}` : null,
             plot: match.overview || movieObj.plot,
             genres: genres.length > 0 ? genres : ['Uncategorized']
           };
@@ -264,7 +264,7 @@ app.get('/api/discover', authenticateToken, async (req, res) => {
     const results = tmdbRes.data.results.map(match => ({
       id: match.id,
       title: match.title,
-      poster_url: match.poster_path ? `https://image.tmdb.org/t/p/w500${match.poster_path}` : null,
+      poster_url: match.poster_path ? `https://wsrv.nl/?url=image.tmdb.org/t/p/w500${match.poster_path}` : null,
       plot: match.overview
     }));
     res.json(results);
@@ -318,7 +318,7 @@ app.delete('/api/requests/:id', authenticateAdmin, (req, res) => {
 // Admin: Upload a movie
 app.post('/api/admin/upload', authenticateAdmin, upload.single('movie'), (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
-  
+
   const { requestId, introEnd, outroStart } = req.body;
   if (requestId) {
     const requestFile = path.join(__dirname, 'requests.json');
@@ -343,6 +343,21 @@ app.post('/api/admin/upload', authenticateAdmin, upload.single('movie'), (req, r
 });
 
 // 5. Search TMDB Route
+const https = require('https');
+app.get('/api/proxy-image', async (req, res) => {
+  const url = req.query.url;
+  if (!url) return res.status(400).end();
+  try {
+    const response = await axios.get(url, {
+      responseType: 'stream',
+      httpsAgent: new https.Agent({ rejectUnauthorized: false })
+    });
+    res.set('Content-Type', response.headers['content-type']);
+    response.data.pipe(res);
+  } catch (err) {
+    res.status(500).end();
+  }
+});
 app.get('/api/search', authenticateToken, async (req, res) => {
   const query = req.query.q;
   if (!query) return res.status(400).json({ error: 'Missing query' });
@@ -361,8 +376,8 @@ app.get('/api/search', authenticateToken, async (req, res) => {
       .map(match => ({
         id: match.id,
         title: match.title || match.name, // 'name' is used for TV shows
-        poster_url: match.poster_path ? `https://image.tmdb.org/t/p/w500${match.poster_path}` : null,
-        backdrop_url: match.backdrop_path ? `https://image.tmdb.org/t/p/w1280${match.backdrop_path}` : null,
+        poster_url: match.poster_path ? `https://wsrv.nl/?url=image.tmdb.org/t/p/w500${match.poster_path}` : null,
+        backdrop_url: match.backdrop_path ? `https://wsrv.nl/?url=image.tmdb.org/t/p/w1280${match.backdrop_path}` : null,
         plot: match.overview,
         media_type: match.media_type
       }));
@@ -391,3 +406,6 @@ app.get('/api/search', authenticateToken, async (req, res) => {
 app.listen(PORT, () => {
   console.log(`Backend server running on http://localhost:${PORT}`);
 });
+
+
+

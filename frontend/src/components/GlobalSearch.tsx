@@ -278,7 +278,9 @@ export default function GlobalSearch() {
                         display: 'flex',
                         alignItems: 'center',
                         gap: '1.5rem',
-                        background: 'var(--glass-bg)',
+                        background: movie.backdrop_url
+                          ? `linear-gradient(to right, var(--black-80) 0%, var(--black-40) 100%), url("${movie.backdrop_url}") center / cover`
+                          : 'var(--glass-bg)',
                         border: '1px solid var(--glass-border)',
                         padding: '1rem',
                         borderRadius: '16px',

@@ -107,6 +107,20 @@ export default function MovieDetails() {
         color: 'white'
       }}
     >
+      {movie?.backdrop_url && (
+        <div style={{
+          position: 'absolute',
+          top: '-2rem', left: '-2rem', right: '-2rem', height: '60vh',
+          backgroundImage: `url("${movie.backdrop_url}")`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          opacity: 0.3,
+          maskImage: 'linear-gradient(to bottom, black 0%, transparent 100%)',
+          WebkitMaskImage: 'linear-gradient(to bottom, black 0%, transparent 100%)',
+          zIndex: 0,
+          pointerEvents: 'none'
+        }} />
+      )}
       <style>{`
         .movie-details-content {
           gap: 4rem;
@@ -181,7 +195,7 @@ export default function MovieDetails() {
         <div className="movie-poster" style={{
           flexShrink: 0,
           aspectRatio: '2/3',
-          backgroundImage: movie.poster_url ? `url(${movie.poster_url})` : 'none',
+          backgroundImage: movie.poster_url ? `url("${movie.poster_url}")` : 'none',
           backgroundSize: 'cover',
           backgroundPosition: 'center',
           backgroundColor: 'var(--glass-bg)',
