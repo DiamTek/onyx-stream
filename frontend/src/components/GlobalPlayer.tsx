@@ -29,7 +29,7 @@ export default function GlobalPlayer() {
   const isPlayerRoute = location.pathname.startsWith('/player/');
   const [activeFilename, setActiveFilename] = useState<string | null>(null);
   const [docPipWindow, setDocPipWindow] = useState<Window | null>(null);
-  
+
   useEffect(() => {
     if (isPlayerRoute) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -37,14 +37,16 @@ export default function GlobalPlayer() {
     }
   }, [location, isPlayerRoute]);
 
+
+
   const [token] = useState(localStorage.getItem('token') || '');
-  
+
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  
+
   const initialEnded = activeFilename ? Cache.isVideoEnded(activeFilename) : false;
   const initialSettings = Cache.getSettings();
-  
+
   const [hasStarted, setHasStarted] = useState(initialEnded);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isEnded, setIsEnded] = useState(initialEnded);
@@ -88,6 +90,19 @@ export default function GlobalPlayer() {
 
   const [jumpStep, setJumpStep] = useState(initialSettings.jumpStep);
   const [playFlash, setPlayFlash] = useState<'play' | 'pause' | null>(null);
+
+  useEffect(() => {
+    if (activeFilename) {
+      const ended = Cache.isVideoEnded(activeFilename);
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setHasStarted(ended);
+      setIsEnded(ended);
+      setProgress(0);
+      setDuration(0);
+      setIsPlaying(false);
+      setPlayFlash(null);
+    }
+  }, [activeFilename]);
   const hideTimerRef = useRef<number | null>(null);
   const flashTimerRef = useRef<number | null>(null);
   const isScrubbingRef = useRef(false);
@@ -153,10 +168,11 @@ export default function GlobalPlayer() {
 
   const togglePlay = () => {
     if (videoRef.current) {
-      if (isEnded || videoRef.current.ended) {
+      if (isEndedRef.current || videoRef.current.ended) {
         videoRef.current.currentTime = 0;
         videoRef.current.play();
         setIsEnded(false);
+        setHasStarted(true);
         setIsPlaying(true);
         resetHideTimer();
         if (activeFilename) Cache.clearVideoEnded(activeFilename);
@@ -165,6 +181,7 @@ export default function GlobalPlayer() {
 
       if (videoRef.current.paused) {
         videoRef.current.play();
+        setHasStarted(true);
         setPlayFlash('play');
         if (flashTimerRef.current) clearTimeout(flashTimerRef.current);
         flashTimerRef.current = window.setTimeout(() => setPlayFlash(null), 400);
@@ -188,14 +205,14 @@ export default function GlobalPlayer() {
         Cache.saveVideoProgress(activeFilename, current, duration);
       }
       if (isEnded && current < duration - 1) {
-         setIsEnded(false);
-         if (activeFilename) Cache.clearVideoEnded(activeFilename);
+        setIsEnded(false);
+        if (activeFilename) Cache.clearVideoEnded(activeFilename);
       }
       if (!isEnded && duration > 0 && current >= duration - 0.5) {
-         setIsEnded(true);
-         setIsPlaying(false);
-         setShowControls(true);
-         if (activeFilename) Cache.markVideoEnded(activeFilename);
+        setIsEnded(true);
+        setIsPlaying(false);
+        setShowControls(true);
+        if (activeFilename) Cache.markVideoEnded(activeFilename);
       }
     }
   };
@@ -205,7 +222,7 @@ export default function GlobalPlayer() {
       setDuration(videoRef.current.duration);
       videoRef.current.volume = initialSettings.volume;
       videoRef.current.muted = initialSettings.isMuted;
-      
+
       // Restore watch progress
       if (activeFilename) {
         if (Cache.isVideoEnded(activeFilename)) {
@@ -245,7 +262,7 @@ export default function GlobalPlayer() {
   const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
     isScrubbingRef.current = true;
     const rect = e.currentTarget.getBoundingClientRect();
-    
+
     updateScrubVisuals(e.clientX, rect);
     updateVideoTime(e.clientX, rect);
 
@@ -254,7 +271,7 @@ export default function GlobalPlayer() {
     const handlePointerMove = (moveEvent: PointerEvent) => {
       if (isScrubbingRef.current) {
         updateScrubVisuals(moveEvent.clientX, rect);
-        
+
         // Throttle actual video seeking to 15fps (~66ms) to prevent freezing
         const now = performance.now();
         if (now - lastVideoUpdateTime > 66) {
@@ -362,7 +379,7 @@ export default function GlobalPlayer() {
             link.rel = 'stylesheet';
             link.type = styleSheet.type;
             link.media = styleSheet.media.mediaText;
-            link.href = styleSheet.href;
+            if (styleSheet.href) link.href = styleSheet.href;
             pipWin.document.head.appendChild(link);
           }
         });
@@ -509,7 +526,7 @@ export default function GlobalPlayer() {
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [duration, volume, jumpStep, isMuted, docPipWindow]);
+  }, [duration, volume, jumpStep, isMuted, docPipWindow, isEnded, activeFilename]);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -548,31 +565,31 @@ export default function GlobalPlayer() {
   };
 
   const content = (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: (isPlayerRoute || !!docPipWindow) ? 1 : 0 }}
       transition={{ duration: 0.3 }}
       ref={containerRef}
       onMouseMove={resetHideTimer}
       onClick={resetHideTimer}
-      style={{ 
-        height: '100vh', width: '100%', 
-        background: 'var(--black)', display: 'flex', flexDirection: 'column', 
+      style={{
+        height: '100vh', width: '100%',
+        background: 'var(--black)', display: 'flex', flexDirection: 'column',
         position: 'fixed', top: 0, left: 0, overflow: 'hidden', zIndex: 9999,
         pointerEvents: (isPlayerRoute || !!docPipWindow) ? 'auto' : 'none'
       }}
     >
-      <video 
+      <video
         ref={videoRef}
         onClick={handleVideoClick}
         onTimeUpdate={handleTimeUpdate}
         onLoadedMetadata={handleLoadedMetadata}
         onPlay={() => setIsPlaying(true)}
         onPause={() => setIsPlaying(false)}
-        onEnded={() => { 
-          setIsEnded(true); 
-          setIsPlaying(false); 
-          setShowControls(true); 
+        onEnded={() => {
+          setIsEnded(true);
+          setIsPlaying(false);
+          setShowControls(true);
           if (activeFilename) Cache.markVideoEnded(activeFilename);
         }}
         onContextMenu={(e) => e.preventDefault()}
@@ -593,8 +610,8 @@ export default function GlobalPlayer() {
               >
                 <PictureInPicture size={64} style={{ opacity: 0.5, marginBottom: '1rem' }} />
                 <h2 style={{ marginBottom: '2rem', color: 'var(--text-secondary)' }}>Playing in Picture-in-Picture</h2>
-                
-                <button 
+
+                <button
                   className="liquid-button active-liquid-glass"
                   style={{ padding: '1rem 2.5rem', fontSize: '1.1rem' }}
                   onClick={async () => {
@@ -611,511 +628,517 @@ export default function GlobalPlayer() {
           </AnimatePresence>
           <AnimatePresence>
             {skipIndicator && (
-          <motion.div
-            key={`skip-${skipIndicator.side}`}
-            initial={{ opacity: 0, x: skipIndicator.side === 'left' ? -20 : 20, y: '-50%' }}
-            animate={{ opacity: 1, x: 0, y: '-50%' }}
-            exit={{ opacity: 0, x: skipIndicator.side === 'left' ? -20 : 20, y: '-50%', transition: { duration: 0.5 } }}
-            transition={{ duration: 0.2 }}
-            className="liquid-panel"
-            style={{
-              position: 'absolute', top: '50%',
-              [skipIndicator.side]: '10%',
-              width: docPipWindow ? '60px' : '90px', height: docPipWindow ? '60px' : '90px', borderRadius: '50%',
-              display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '0.25rem',
-              pointerEvents: 'none', background: 'var(--bg-dark-alpha-90)', color: 'white',
-              zIndex: 100, border: '1px solid var(--glass-border)'
-            }}
-          >
-            {skipIndicator.side === 'left' ? <Rewind size={docPipWindow ? 20 : 28} /> : <FastForward size={docPipWindow ? 20 : 28} />}
-            <span style={{ fontSize: docPipWindow ? '1rem' : '1.2rem', fontWeight: 'bold', transform: 'translateY(1px)' }}>
-              {skipIndicator.side === 'left' ? '-' : '+'}{skipIndicator.amount}s
-            </span>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      <AnimatePresence>
-        {volIndicator && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9, x: '-50%' }}
-            animate={{ opacity: 1, scale: 1, x: '-50%' }}
-            exit={{ opacity: 0, scale: 0.9, x: '-50%', transition: { duration: 0.5 } }}
-            transition={{ duration: 0.2 }}
-            className="liquid-panel"
-            style={{
-              position: 'absolute', top: docPipWindow ? 'calc(50% - 70px)' : 'calc(50% - 110px)', left: '50%',
-              padding: docPipWindow ? '0.5rem 1rem' : '0.75rem 1.5rem', borderRadius: '40px',
-              display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: '0.75rem',
-              pointerEvents: 'none', background: 'var(--bg-dark-alpha-90)', color: 'white',
-              zIndex: 100, border: '1px solid var(--glass-border)',
-              minWidth: docPipWindow ? '120px' : '160px'
-            }}
-          >
-            {volIndicator.volume === 0 ? <VolumeX size={docPipWindow ? 20 : 28} /> : (volIndicator.volume < 0.5 ? <Volume1 size={docPipWindow ? 20 : 28} /> : <Volume2 size={docPipWindow ? 20 : 28} />)}
-            <span style={{ fontSize: docPipWindow ? '1rem' : '1.25rem', fontWeight: 'bold', transform: 'translateY(1px)' }}>
-              {Math.round(volIndicator.volume * 100)}%
-            </span>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      <AnimatePresence>
-        {!isPiP && hasStarted && (isEnded || (!isPlaying && showControls)) && (
-          <motion.div
-            key="static-play"
-            initial={{ opacity: 0, scale: 0.8, x: '-50%', y: '-50%' }}
-            animate={{ opacity: 1, scale: 1, x: '-50%', y: '-50%' }}
-            exit={{ opacity: 0, scale: 1.2, x: '-50%', y: '-50%', transition: { duration: 0.2 } }}
-            transition={{ duration: 0.2 }}
-            className="liquid-panel"
-            style={{
-              position: 'absolute', top: '50%', left: '50%',
-              width: docPipWindow ? '60px' : '100px', height: docPipWindow ? '60px' : '100px', borderRadius: '50%',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              pointerEvents: 'none', background: 'var(--bg-dark-alpha-90)', color: 'white',
-              zIndex: 40, border: '1px solid var(--glass-border)'
-            }}
-          >
-            {isEnded ? <RotateCcw size={docPipWindow ? 24 : 40} color="white" strokeWidth={2.5} /> : <Play size={docPipWindow ? 24 : 40} fill="white" style={{ marginLeft: '3px' }} />}
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      <AnimatePresence mode="wait">
-        {!isPiP && hasStarted && playFlash && (
-          <motion.div
-            key={playFlash}
-            initial={{ opacity: 0, scale: 0.8, x: '-50%', y: '-50%' }}
-            animate={{ opacity: 1, scale: 1.1, x: '-50%', y: '-50%' }}
-            exit={{ opacity: 0, scale: 1.3, x: '-50%', y: '-50%', transition: { duration: 0.2 } }}
-            transition={{ duration: 0.2 }}
-            className="liquid-panel"
-            style={{
-              position: 'absolute', top: '50%', left: '50%',
-              width: docPipWindow ? '60px' : '100px', height: docPipWindow ? '60px' : '100px', borderRadius: '50%',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              pointerEvents: 'none', background: 'var(--bg-dark-alpha-90)', color: 'white',
-              zIndex: 40, border: '1px solid var(--glass-border)'
-            }}
-          >
-            {playFlash === 'play' ? <Play size={docPipWindow ? 24 : 40} fill="white" style={{ marginLeft: '3px' }} /> : <Pause size={docPipWindow ? 24 : 40} fill="white" />}
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      <AnimatePresence>
-        {!hasStarted && (
-          <motion.div
-            initial={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 1.1 }}
-            transition={{ duration: 0.4, ease: 'easeOut' }}
-            style={{
-              position: 'absolute', inset: 0, zIndex: 50,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              background: 'var(--black-80)',
-              cursor: 'pointer'
-            }}
-            onClick={() => {
-              setHasStarted(true);
-              setIsPlaying(true);
-              if (videoRef.current) videoRef.current.play();
-            }}
-          >
-            <motion.button 
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              className="liquid-button active-liquid-glass" 
-              style={{
-                width: '120px', height: '120px', borderRadius: '50%',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                padding: 0, boxShadow: '0 20px 40px var(--black-50), inset 0 2px 4px var(--white-20)'
-              }}
-            >
-              <Play size={48} fill="currentColor" style={{ marginLeft: '8px' }} />
-            </motion.button>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      <AnimatePresence>
-        {(!hasStarted || showControls) && !docPipWindow && (
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            transition={{ duration: 0.3 }}
-            style={{ padding: '1.5rem', position: 'absolute', top: 0, left: 0, zIndex: 60 }}
-          >
-            <button onClick={() => navigate('/library')} className="liquid-button" style={{ padding: '0.75rem 1.5rem' }}>
-              <ArrowLeft size={20} />
-              <span style={{ transform: 'translateY(1.5px)' }}>{docPipWindow ? 'Browse Library' : (isPiP ? 'Back to Dashboard' : 'Back')}</span>
-            </button>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      <AnimatePresence>
-        {introEnd !== null && hasStarted && !isEnded && progress >= (introStart !== null ? introStart : 0) && progress <= introEnd && (
-          <motion.div
-            initial={{ opacity: 0, x: 40, y: 0 }}
-            animate={{ 
-              opacity: showSettings ? 0 : 1, 
-              x: showSettings ? 200 : 0,
-              y: showControls ? 0 : (docPipWindow ? 40 : 64)
-            }}
-            exit={{ opacity: 0, x: 40 }}
-            transition={{ 
-              opacity: { duration: 0.2 },
-              x: { type: 'spring', stiffness: 200, damping: 20 },
-              y: { duration: 0.3 }
-            }}
-            style={{ position: 'absolute', bottom: docPipWindow ? '3.5rem' : '7rem', right: docPipWindow ? '1.5rem' : '3rem', zIndex: 30 }}
-          >
-            <button 
-              className="liquid-button active-liquid-glass"
-              style={{ padding: docPipWindow ? '0.5rem 1rem' : '0.75rem 1.5rem', border: '1px solid var(--primary-alpha-60)' }}
-              onClick={(e) => {
-                e.stopPropagation();
-                if (videoRef.current && duration > introEnd) {
-                  videoRef.current.currentTime = introEnd;
-                  setProgress(introEnd);
-                  setPlayFlash('play');
-                  if (flashTimerRef.current) clearTimeout(flashTimerRef.current);
-                  flashTimerRef.current = window.setTimeout(() => setPlayFlash(null), 400);
-                }
-              }}
-            >
-              <span style={{ fontWeight: 'bold', transform: 'translateY(1px)', fontSize: docPipWindow ? '0.85rem' : undefined }}>Skip Intro</span>
-              <FastForward size={docPipWindow ? 16 : 18} style={{ marginLeft: '4px' }} />
-            </button>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      <AnimatePresence>
-        {outroStart !== null && hasStarted && !isEnded && progress >= outroStart && progress <= (outroEnd !== null ? outroEnd : duration) && (
-          <motion.div
-            initial={{ opacity: 0, x: 40, y: 0 }}
-            animate={{ 
-              opacity: showSettings ? 0 : 1, 
-              x: showSettings ? 200 : 0,
-              y: showControls ? 0 : (docPipWindow ? 40 : 64)
-            }}
-            exit={{ opacity: 0, x: 40 }}
-            transition={{ 
-              opacity: { duration: 0.2 },
-              x: { type: 'spring', stiffness: 200, damping: 20 },
-              y: { duration: 0.3 }
-            }}
-            style={{ position: 'absolute', bottom: docPipWindow ? '3.5rem' : '7rem', right: docPipWindow ? '1.5rem' : '3rem', zIndex: 30 }}
-          >
-            <button 
-              className="liquid-button active-liquid-glass"
-              style={{ padding: docPipWindow ? '0.5rem 1rem' : '0.75rem 1.5rem', border: '1px solid var(--primary-alpha-60)' }}
-              onClick={(e) => {
-                e.stopPropagation();
-                if (videoRef.current) {
-                  const targetTime = outroEnd !== null ? outroEnd : duration;
-                  videoRef.current.currentTime = targetTime;
-                  setProgress(targetTime);
-                  setPlayFlash('play');
-                  if (flashTimerRef.current) clearTimeout(flashTimerRef.current);
-                  flashTimerRef.current = window.setTimeout(() => setPlayFlash(null), 400);
-                }
-              }}
-            >
-              <span style={{ fontWeight: 'bold', transform: 'translateY(1px)', fontSize: docPipWindow ? '0.85rem' : undefined }}>Skip Outro</span>
-              <FastForward size={docPipWindow ? 16 : 18} style={{ marginLeft: '4px' }} />
-            </button>
-          </motion.div>
-        )}
-      </AnimatePresence>
-      
-      <AnimatePresence>
-        {hasStarted && showControls && (
-          <motion.div
-            initial={{ opacity: 0, y: 40, x: "-50%" }}
-            animate={{ opacity: 1, y: 0, x: "-50%" }}
-            exit={{ opacity: 0, y: 40, x: "-50%" }}
-            transition={{ duration: 0.3 }}
-            style={{
-              position: 'absolute',
-              bottom: docPipWindow ? 0 : '2rem',
-              left: '50%',
-              width: docPipWindow ? '100%' : '90%',
-              maxWidth: docPipWindow ? 'none' : '800px',
-              zIndex: showSettings ? 999999 : 10
-            }}
-          >
-            <div className="liquid-panel" style={{ 
-              padding: docPipWindow ? '0.5rem 1rem' : '0.75rem 1.5rem', 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: docPipWindow ? '1rem' : '1.5rem', 
-              background: 'var(--bg-dark-alpha-90)',
-              ...(docPipWindow ? {
-                borderRadius: 0,
-                borderLeft: 'none',
-                borderRight: 'none',
-                borderBottom: 'none'
-              } : {
-                borderRadius: '24px'
-              })
-            }}>
-              
-              {/* Play/Pause */}
-              <button 
-                onClick={togglePlay} 
-                style={{ 
-                  background: 'var(--text-primary)', color: 'var(--black)', border: 'none', 
-                  width: docPipWindow ? '28px' : '36px', height: docPipWindow ? '28px' : '36px', borderRadius: '50%', 
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  cursor: 'pointer', transition: 'transform 0.2s ease', flexShrink: 0,
-                  boxShadow: '0 4px 12px var(--white-20)'
+              <motion.div
+                key={`skip-${skipIndicator.side}`}
+                initial={{ opacity: 0, x: skipIndicator.side === 'left' ? -20 : 20, y: '-50%' }}
+                animate={{ opacity: 1, x: 0, y: '-50%' }}
+                exit={{ opacity: 0, x: skipIndicator.side === 'left' ? -20 : 20, y: '-50%', transition: { duration: 0.5 } }}
+                transition={{ duration: 0.2 }}
+                className="liquid-panel"
+                style={{
+                  position: 'absolute', top: '50%',
+                  [skipIndicator.side]: '10%',
+                  width: docPipWindow ? '60px' : '90px', height: docPipWindow ? '60px' : '90px', borderRadius: '50%',
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '0.25rem',
+                  pointerEvents: 'none', background: 'var(--bg-dark-alpha-90)', color: 'white',
+                  zIndex: 100, border: '1px solid var(--glass-border)'
                 }}
-                onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
-                onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
               >
-                {isEnded ? <RotateCcw size={docPipWindow ? 14 : 18} color="var(--black)" strokeWidth={2.5} /> : isPlaying ? <Pause size={docPipWindow ? 14 : 18} fill="var(--black)" /> : <Play size={docPipWindow ? 14 : 18} fill="var(--black)" style={{ marginLeft: '2px' }} />}
-              </button>
-              
-              {/* Volume */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <button onClick={toggleMute} style={{ background: 'none', border: 'none', color: 'var(--text-primary)', cursor: 'pointer', display: 'flex', alignItems: 'center', marginRight: '4px' }}>
-                  {isMuted || volume === 0 ? <VolumeX size={docPipWindow ? 14 : 18} /> : (volume < 0.5 ? <Volume1 size={docPipWindow ? 14 : 18} /> : <Volume2 size={docPipWindow ? 14 : 18} />)}
-                </button>
-                <div 
-                  className="custom-slider-container"
-                  onPointerDown={handleVolumePointerDown}
-                  style={{ width: '60px', height: '24px' }}
+                {skipIndicator.side === 'left' ? <Rewind size={docPipWindow ? 20 : 28} /> : <FastForward size={docPipWindow ? 20 : 28} />}
+                <span style={{ fontSize: docPipWindow ? '1rem' : '1.2rem', fontWeight: 'bold', transform: 'translateY(1px)' }}>
+                  {skipIndicator.side === 'left' ? '-' : '+'}{skipIndicator.amount}s
+                </span>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          <AnimatePresence>
+            {volIndicator && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9, x: '-50%' }}
+                animate={{ opacity: 1, scale: 1, x: '-50%' }}
+                exit={{ opacity: 0, scale: 0.9, x: '-50%', transition: { duration: 0.5 } }}
+                transition={{ duration: 0.2 }}
+                className="liquid-panel"
+                style={{
+                  position: 'absolute', top: docPipWindow ? 'calc(50% - 70px)' : 'calc(50% - 110px)', left: '50%',
+                  padding: docPipWindow ? '0.5rem 1rem' : '0.75rem 1.5rem', borderRadius: '40px',
+                  display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: '0.75rem',
+                  pointerEvents: 'none', background: 'var(--bg-dark-alpha-90)', color: 'white',
+                  zIndex: 100, border: '1px solid var(--glass-border)',
+                  minWidth: docPipWindow ? '120px' : '160px'
+                }}
+              >
+                {volIndicator.volume === 0 ? <VolumeX size={docPipWindow ? 20 : 28} /> : (volIndicator.volume < 0.5 ? <Volume1 size={docPipWindow ? 20 : 28} /> : <Volume2 size={docPipWindow ? 20 : 28} />)}
+                <span style={{ fontSize: docPipWindow ? '1rem' : '1.25rem', fontWeight: 'bold', transform: 'translateY(1px)' }}>
+                  {Math.round(volIndicator.volume * 100)}%
+                </span>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          <AnimatePresence>
+            {!isPiP && hasStarted && (isEnded || (!isPlaying && showControls)) && (
+              <motion.div
+                key="static-play"
+                initial={{ opacity: 0, scale: 0.8, x: '-50%', y: '-50%' }}
+                animate={{ opacity: 1, scale: 1, x: '-50%', y: '-50%' }}
+                exit={{ opacity: 0, scale: 1.2, x: '-50%', y: '-50%', transition: { duration: 0.2 } }}
+                transition={{ duration: 0.2 }}
+                className="liquid-panel"
+                style={{
+                  position: 'absolute', top: '50%', left: '50%',
+                  width: docPipWindow ? '60px' : '100px', height: docPipWindow ? '60px' : '100px', borderRadius: '50%',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  pointerEvents: 'none', background: 'var(--bg-dark-alpha-90)', color: 'white',
+                  zIndex: 40, border: '1px solid var(--glass-border)'
+                }}
+              >
+                {isEnded ? <RotateCcw size={docPipWindow ? 24 : 40} color="white" strokeWidth={2.5} /> : <Play size={docPipWindow ? 24 : 40} fill="white" style={{ marginLeft: '3px' }} />}
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          <AnimatePresence mode="wait">
+            {!isPiP && hasStarted && playFlash && (
+              <motion.div
+                key={playFlash}
+                initial={{ opacity: 0, scale: 0.8, x: '-50%', y: '-50%' }}
+                animate={{ opacity: 1, scale: 1.1, x: '-50%', y: '-50%' }}
+                exit={{ opacity: 0, scale: 1.3, x: '-50%', y: '-50%', transition: { duration: 0.2 } }}
+                transition={{ duration: 0.2 }}
+                className="liquid-panel"
+                style={{
+                  position: 'absolute', top: '50%', left: '50%',
+                  width: docPipWindow ? '60px' : '100px', height: docPipWindow ? '60px' : '100px', borderRadius: '50%',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  pointerEvents: 'none', background: 'var(--bg-dark-alpha-90)', color: 'white',
+                  zIndex: 40, border: '1px solid var(--glass-border)'
+                }}
+              >
+                {playFlash === 'play' ? <Play size={docPipWindow ? 24 : 40} fill="white" style={{ marginLeft: '3px' }} /> : <Pause size={docPipWindow ? 24 : 40} fill="white" />}
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          <AnimatePresence>
+            {!hasStarted && (
+              <motion.div
+                initial={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 1.1 }}
+                transition={{ duration: 0.4, ease: 'easeOut' }}
+                style={{
+                  position: 'absolute', inset: 0, zIndex: 50,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  background: 'var(--black-80)',
+                  cursor: 'pointer'
+                }}
+                onClick={() => {
+                  setHasStarted(true);
+                  setIsPlaying(true);
+                  if (videoRef.current) videoRef.current.play();
+                }}
+              >
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="liquid-button active-liquid-glass"
+                  style={{
+                    width: '120px', height: '120px', borderRadius: '50%',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    padding: 0, boxShadow: '0 20px 40px var(--black-50), inset 0 2px 4px var(--white-20)'
+                  }}
                 >
-                  <div className="custom-slider-track" />
-                  <div className="custom-slider-fill" style={{ width: `${(isMuted ? 0 : volume) * 100}%` }} />
-                  <div className="custom-slider-thumb" style={{ left: `calc(${(isMuted ? 0 : volume) * 100}% - 7px)` }} />
-                </div>
-              </div>
+                  <Play size={48} fill="currentColor" style={{ marginLeft: '8px' }} />
+                </motion.button>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
-              {/* Scrubber */}
-              <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                <span style={{ fontSize: docPipWindow ? '0.7rem' : '0.8rem', color: 'var(--text-secondary)', fontFamily: 'monospace' }}>{formatTime(progress)}</span>
-                
-                {/* Custom Track */}
-                <div 
-                  className="custom-slider-container"
-                  onPointerDown={handlePointerDown}
-                  style={{ flex: 1, height: '24px' }}
-                >
-                  <div className="custom-slider-track" />
-                  
-                  <div className="custom-slider-fill" style={{ 
-                    width: `${duration ? (progress / duration) * 100 : 0}%`,
-                    // eslint-disable-next-line react-hooks/refs
-                    transition: isScrubbingRef.current ? 'height 0.2s ease' : 'width 0.25s linear, height 0.2s ease'
-                  }} />
-                  
-                  <div className="custom-slider-thumb" style={{ 
-                    left: `calc(${duration ? (progress / duration) * 100 : 0}% - 7px)`,
-                    // eslint-disable-next-line react-hooks/refs
-                    transition: isScrubbingRef.current ? 'transform 0.2s ease' : 'left 0.25s linear, transform 0.2s ease',
-                    willChange: 'left, transform'
-                  }} />
-                </div>
-
-                <span style={{ fontSize: docPipWindow ? '0.7rem' : '0.8rem', color: 'var(--text-secondary)', fontFamily: 'monospace' }}>{formatTime(duration)}</span>
-              </div>
-
-              {/* Settings & Fullscreen */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: docPipWindow ? '0.5rem' : '1rem' }}>
-                <button style={{ background: 'none', border: 'none', color: 'var(--text-primary)', cursor: 'not-allowed', opacity: 0.3, display: 'flex', alignItems: 'center' }} title="Subtitles (Unavailable)">
-                  <Subtitles size={docPipWindow ? 14 : 18} />
+          <AnimatePresence>
+            {(!hasStarted || showControls) && !docPipWindow && (
+              <motion.div
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                transition={{ duration: 0.3 }}
+                style={{ padding: '1.5rem', position: 'absolute', top: 0, left: 0, zIndex: 60 }}
+              >
+                <button onClick={() => navigate('/library')} className="liquid-button" style={{ padding: '0.75rem 1.5rem' }}>
+                  <ArrowLeft size={20} />
+                  <span style={{ transform: 'translateY(1.5px)' }}>{docPipWindow ? 'Browse Library' : (isPiP ? 'Back to Dashboard' : 'Back')}</span>
                 </button>
-                <div style={{ position: 'relative' }}>
-                  <button onClick={() => setShowSettings(!showSettings)} style={{ background: 'none', border: 'none', color: showSettings ? 'var(--primary-color)' : 'var(--text-primary)', cursor: 'pointer', opacity: showSettings ? 1 : 0.8, display: 'flex', alignItems: 'center', transition: 'var(--transition)' }} onMouseEnter={(e) => e.currentTarget.style.opacity = '1'} onMouseLeave={(e) => e.currentTarget.style.opacity = showSettings ? '1' : '0.8'}>
-                    <Settings size={docPipWindow ? 14 : 18} />
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          <AnimatePresence>
+            {introEnd !== null && !isEnded && progress >= (introStart !== null ? introStart : 0) && progress <= introEnd && (
+              <motion.div
+                initial={{ opacity: 0, x: 40, y: 0 }}
+                animate={{
+                  opacity: showSettings ? 0 : 1,
+                  x: showSettings ? 200 : 0,
+                  y: showControls ? 0 : (docPipWindow ? 40 : 64)
+                }}
+                exit={{ opacity: 0, x: 40 }}
+                transition={{
+                  opacity: { duration: 0.2 },
+                  x: { type: 'spring', stiffness: 200, damping: 20 },
+                  y: { duration: 0.3 }
+                }}
+                style={{ position: 'absolute', bottom: docPipWindow ? '3.5rem' : '7rem', right: docPipWindow ? '1.5rem' : '3rem', zIndex: 60 }}
+              >
+                <button
+                  className="liquid-button active-liquid-glass"
+                  style={{ padding: docPipWindow ? '0.5rem 1rem' : '0.75rem 1.5rem', border: '1px solid var(--primary-alpha-60)' }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (videoRef.current && duration > introEnd) {
+                      videoRef.current.currentTime = introEnd;
+                      setProgress(introEnd);
+                      if (!hasStarted) setHasStarted(true);
+                      videoRef.current.play();
+                      setIsPlaying(true);
+                      setPlayFlash('play');
+                      if (flashTimerRef.current) clearTimeout(flashTimerRef.current);
+                      flashTimerRef.current = window.setTimeout(() => setPlayFlash(null), 400);
+                    }
+                  }}
+                >
+                  <span style={{ fontWeight: 'bold', transform: 'translateY(1px)', fontSize: docPipWindow ? '0.85rem' : undefined }}>Skip Intro</span>
+                  <FastForward size={docPipWindow ? 16 : 18} style={{ marginLeft: '4px' }} />
+                </button>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          <AnimatePresence>
+            {outroStart !== null && !isEnded && progress >= outroStart && progress <= (outroEnd !== null ? outroEnd : duration) && (
+              <motion.div
+                initial={{ opacity: 0, x: 40, y: 0 }}
+                animate={{
+                  opacity: showSettings ? 0 : 1,
+                  x: showSettings ? 200 : 0,
+                  y: showControls ? 0 : (docPipWindow ? 40 : 64)
+                }}
+                exit={{ opacity: 0, x: 40 }}
+                transition={{
+                  opacity: { duration: 0.2 },
+                  x: { type: 'spring', stiffness: 200, damping: 20 },
+                  y: { duration: 0.3 }
+                }}
+                style={{ position: 'absolute', bottom: docPipWindow ? '3.5rem' : '7rem', right: docPipWindow ? '1.5rem' : '3rem', zIndex: 60 }}
+              >
+                <button
+                  className="liquid-button active-liquid-glass"
+                  style={{ padding: docPipWindow ? '0.5rem 1rem' : '0.75rem 1.5rem', border: '1px solid var(--primary-alpha-60)' }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (videoRef.current) {
+                      const targetTime = outroEnd !== null ? outroEnd : duration;
+                      videoRef.current.currentTime = targetTime;
+                      setProgress(targetTime);
+                        if (!hasStarted) setHasStarted(true);
+                        videoRef.current.play();
+                        setIsPlaying(true);
+                        setPlayFlash('play');
+                      if (flashTimerRef.current) clearTimeout(flashTimerRef.current);
+                      flashTimerRef.current = window.setTimeout(() => setPlayFlash(null), 400);
+                    }
+                  }}
+                >
+                  <span style={{ fontWeight: 'bold', transform: 'translateY(1px)', fontSize: docPipWindow ? '0.85rem' : undefined }}>Skip Outro</span>
+                  <FastForward size={docPipWindow ? 16 : 18} style={{ marginLeft: '4px' }} />
+                </button>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          <AnimatePresence>
+            {hasStarted && showControls && (
+              <motion.div
+                initial={{ opacity: 0, y: 40, x: "-50%" }}
+                animate={{ opacity: 1, y: 0, x: "-50%" }}
+                exit={{ opacity: 0, y: 40, x: "-50%" }}
+                transition={{ duration: 0.3 }}
+                style={{
+                  position: 'absolute',
+                  bottom: docPipWindow ? 0 : '2rem',
+                  left: '50%',
+                  width: docPipWindow ? '100%' : '90%',
+                  maxWidth: docPipWindow ? 'none' : '800px',
+                  zIndex: showSettings ? 999999 : 10
+                }}
+              >
+                <div className="liquid-panel" style={{
+                  padding: docPipWindow ? '0.5rem 1rem' : '0.75rem 1.5rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: docPipWindow ? '1rem' : '1.5rem',
+                  background: 'var(--bg-dark-alpha-90)',
+                  ...(docPipWindow ? {
+                    borderRadius: 0,
+                    borderLeft: 'none',
+                    borderRight: 'none',
+                    borderBottom: 'none'
+                  } : {
+                    borderRadius: '24px'
+                  })
+                }}>
+
+                  {/* Play/Pause */}
+                  <button
+                    onClick={togglePlay}
+                    style={{
+                      background: 'var(--text-primary)', color: 'var(--black)', border: 'none',
+                      width: docPipWindow ? '28px' : '36px', height: docPipWindow ? '28px' : '36px', borderRadius: '50%',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      cursor: 'pointer', transition: 'transform 0.2s ease', flexShrink: 0,
+                      boxShadow: '0 4px 12px var(--white-20)'
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
+                    onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                  >
+                    {isEnded ? <RotateCcw size={docPipWindow ? 14 : 18} color="black" strokeWidth={2.5} /> : isPlaying ? <Pause size={docPipWindow ? 14 : 18} fill="var(--black)" /> : <Play size={docPipWindow ? 14 : 18} fill="var(--black)" style={{ marginLeft: '2px' }} />}
                   </button>
-                  <AnimatePresence>
-                    {showSettings && (
-                      <motion.div
-                        layout
-                        initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                        transition={{ layout: { type: "spring", bounce: 0, duration: 0.3 }, opacity: { duration: 0.2 } }}
-                        ref={settingsPanelRef}
-                        style={{
-                          position: 'absolute', bottom: 'calc(100% + 1.5rem)', right: -10,
-                          background: 'var(--bg-darker-alpha-90)', backdropFilter: 'blur(12px)',
-                          border: '1px solid var(--glass-border)', borderRadius: '12px',
-                          padding: docPipWindow ? '0.25rem' : '0.5rem', minWidth: docPipWindow ? '140px' : '180px',
-                          boxShadow: '0 10px 30px var(--black-50)',
-                          overflow: 'hidden',
-                          zIndex: 999999
-                        }}
-                      >
-                        <AnimatePresence mode={docPipWindow ? "wait" : "popLayout"} initial={false}>
-                          {settingsView === 'main' ? (
-                            <motion.div
-                              key="main"
-                              initial={{ x: '-100%', opacity: 0 }} animate={{ x: 0, opacity: 1 }} exit={{ x: '-100%', opacity: 0 }} transition={{ duration: 0.25, ease: 'easeOut' }}
-                              style={{ display: 'flex', flexDirection: 'column', width: 'max-content', gap: '0.25rem' }}
-                            >
-                                <button
-                                  onClick={() => setSettingsView('skip_duration')}
-                                  style={{
-                                    background: 'transparent', color: 'var(--text-primary)', border: 'none', 
-                                    padding: docPipWindow ? '0.35rem 0.5rem' : '0.5rem 0.75rem', borderRadius: '8px',
-                                    cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1.5rem',
-                                    fontSize: docPipWindow ? '0.7rem' : '0.8rem',
-                                    transition: 'background-color 0.2s ease', 
-                                    minWidth: docPipWindow ? '180px' : '240px', whiteSpace: 'nowrap'
-                                  }}
-                                onMouseEnter={(e) => e.currentTarget.style.background = 'var(--white-5)'}
-                                onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                              >
-                                <span style={{ transform: 'translateY(1px)' }}>Skip Duration</span>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-secondary)' }}>
-                                  <span style={{ transform: 'translateY(1px)' }}>{jumpStep}s</span>
-                                  <ChevronRight size={14} />
-                                </div>
-                              </button>
-                              
-                              <button
-                                  onClick={() => setSettingsView('playback_speed')}
-                                  style={{
-                                    background: 'transparent', color: 'var(--text-primary)', border: 'none', 
-                                    padding: docPipWindow ? '0.35rem 0.5rem' : '0.5rem 0.75rem', borderRadius: '8px',
-                                    cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1.5rem',
-                                    fontSize: docPipWindow ? '0.7rem' : '0.8rem',
-                                    transition: 'background-color 0.2s ease', 
-                                    minWidth: docPipWindow ? '180px' : '240px', whiteSpace: 'nowrap'
-                                  }}
-                                onMouseEnter={(e) => e.currentTarget.style.background = 'var(--white-5)'}
-                                onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                              >
-                                <span style={{ transform: 'translateY(1px)' }}>Playback Speed</span>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-secondary)' }}>
-                                  <span style={{ transform: 'translateY(1px)' }}>{playbackSpeed === 1 ? 'Normal' : `${playbackSpeed}x`}</span>
-                                  <ChevronRight size={14} />
-                                </div>
-                              </button>
-                            </motion.div>
-                          ) : settingsView === 'skip_duration' ? (
-                            <motion.div
-                              key="skip"
-                              initial={{ x: '100%', opacity: 0 }} animate={{ x: 0, opacity: 1 }} exit={{ x: '100%', opacity: 0 }} transition={{ duration: 0.25, ease: 'easeOut' }}
-                              style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', width: 'max-content' }}
-                            >
-                              <button
-                                onClick={() => setSettingsView('main')}
-                                style={{
-                                  background: 'transparent', color: 'var(--text-secondary)', border: 'none', 
-                                  padding: docPipWindow ? '0.35rem 0.5rem' : '0.5rem 0.75rem', borderRadius: '8px',
-                                  cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem', 
-                                  fontSize: docPipWindow ? '0.7rem' : '0.8rem', marginBottom: '0.25rem',
-                                  transition: 'color 0.2s ease', whiteSpace: 'nowrap'
-                                }}
-                                onMouseEnter={(e) => e.currentTarget.style.color = 'var(--text-primary)'}
-                                onMouseLeave={(e) => e.currentTarget.style.color = 'var(--text-secondary)'}
-                              >
-                                <ChevronLeft size={14} />
-                                <span style={{ transform: 'translateY(1px)' }}>Skip Duration</span>
-                              </button>
-                              
-                              <div style={{ width: '100%', height: '1px', background: 'var(--glass-border)', margin: '0.25rem 0' }} />
-                              
-                              <div className="settings-options-grid">
-                                {[5, 10, 15, 30].map(val => (
-                                  <button
-                                    key={val}
-                                    onClick={() => { setJumpStep(val); Cache.saveSettings({ jumpStep: val }); setSettingsView('main'); setShowSettings(false); }}
-                                    style={{
-                                      background: jumpStep === val ? 'var(--primary-color)' : 'transparent',
-                                      color: jumpStep === val ? 'var(--white)' : 'var(--text-primary)',
-                                      border: 'none', padding: docPipWindow ? '0.35rem 0.5rem' : '0.5rem 0.75rem', borderRadius: '8px',
-                                      cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', 
-                                      fontSize: docPipWindow ? '0.7rem' : '0.8rem',
-                                      transition: 'background-color 0.2s ease'
-                                    }}
-                                    onMouseEnter={(e) => { if (jumpStep !== val) e.currentTarget.style.background = 'var(--white-5)' }}
-                                    onMouseLeave={(e) => { if (jumpStep !== val) e.currentTarget.style.background = 'transparent' }}
-                                  >
-                                    <span style={{ transform: 'translateY(1px)' }}>{val} seconds</span>
-                                    {jumpStep === val && <Check size={14} />}
-                                  </button>
-                                ))}
-                              </div>
-                            </motion.div>
-                          ) : (
-                            <motion.div
-                              key="speed"
-                              initial={{ x: '100%', opacity: 0 }} animate={{ x: 0, opacity: 1 }} exit={{ x: '100%', opacity: 0 }} transition={{ duration: 0.25, ease: 'easeOut' }}
-                              style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', width: 'max-content' }}
-                            >
-                              <button
-                                onClick={() => setSettingsView('main')}
-                                style={{
-                                  background: 'transparent', color: 'var(--text-secondary)', border: 'none', 
-                                  padding: docPipWindow ? '0.35rem 0.5rem' : '0.5rem 0.75rem', borderRadius: '8px',
-                                  cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem', 
-                                  fontSize: docPipWindow ? '0.7rem' : '0.8rem', marginBottom: '0.25rem',
-                                  transition: 'color 0.2s ease', whiteSpace: 'nowrap'
-                                }}
-                                onMouseEnter={(e) => e.currentTarget.style.color = 'var(--text-primary)'}
-                                onMouseLeave={(e) => e.currentTarget.style.color = 'var(--text-secondary)'}
-                              >
-                                <ChevronLeft size={14} />
-                                <span style={{ transform: 'translateY(1px)' }}>Playback Speed</span>
-                              </button>
-                              
-                              <div style={{ width: '100%', height: '1px', background: 'var(--glass-border)', margin: '0.25rem 0' }} />
-                              
-                              <div className="settings-options-grid">
-                                {[0.25, 0.5, 0.75, 1, 1.25, 1.5, 2].map(val => (
-                                  <button
-                                    key={val}
-                                    onClick={() => { 
-                                      setPlaybackSpeed(val); 
-                                      if (videoRef.current) videoRef.current.playbackRate = val;
-                                      Cache.saveSettings({ playbackSpeed: val }); 
-                                      setSettingsView('main'); 
-                                      setShowSettings(false); 
-                                    }}
-                                    style={{
-                                      background: playbackSpeed === val ? 'var(--primary-color)' : 'transparent',
-                                      color: playbackSpeed === val ? 'var(--white)' : 'var(--text-primary)',
-                                      border: 'none', padding: docPipWindow ? '0.35rem 0.5rem' : '0.5rem 0.75rem', borderRadius: '8px',
-                                      cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', 
-                                      fontSize: docPipWindow ? '0.7rem' : '0.8rem',
-                                      transition: 'background-color 0.2s ease'
-                                    }}
-                                    onMouseEnter={(e) => { if (playbackSpeed !== val) e.currentTarget.style.background = 'var(--white-5)' }}
-                                    onMouseLeave={(e) => { if (playbackSpeed !== val) e.currentTarget.style.background = 'transparent' }}
-                                  >
-                                    <span style={{ transform: 'translateY(1px)' }}>{val === 1 ? 'Normal' : `${val}x`}</span>
-                                    {playbackSpeed === val && <Check size={14} />}
-                                  </button>
-                                ))}
-                              </div>
-                            </motion.div>
-                          )}
-                        </AnimatePresence>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
-                <button onClick={togglePiP} style={{ background: 'none', border: 'none', color: 'var(--text-primary)', cursor: 'pointer', opacity: 0.8, display: 'flex', alignItems: 'center' }} onMouseEnter={(e) => e.currentTarget.style.opacity = '1'} onMouseLeave={(e) => e.currentTarget.style.opacity = '0.8'} title={(docPipWindow || isPiP) ? "Restore Player" : "Picture in Picture"}>
-                  {(docPipWindow || isPiP) ? <PictureInPicture2 size={docPipWindow ? 14 : 18} /> : <PictureInPicture size={docPipWindow ? 14 : 18} />}
-                </button>
-                <button onClick={toggleFullscreen} style={{ background: 'none', border: 'none', color: 'var(--text-primary)', cursor: 'pointer', opacity: 0.8, display: 'flex', alignItems: 'center' }} onMouseEnter={(e) => e.currentTarget.style.opacity = '1'} onMouseLeave={(e) => e.currentTarget.style.opacity = '0.8'} title="Fullscreen">
-                  <Maximize size={docPipWindow ? 14 : 18} />
-                </button>
-              </div>
 
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+                  {/* Volume */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <button onClick={toggleMute} style={{ background: 'none', border: 'none', color: 'var(--text-primary)', cursor: 'pointer', display: 'flex', alignItems: 'center', marginRight: '4px' }}>
+                      {isMuted || volume === 0 ? <VolumeX size={docPipWindow ? 14 : 18} /> : (volume < 0.5 ? <Volume1 size={docPipWindow ? 14 : 18} /> : <Volume2 size={docPipWindow ? 14 : 18} />)}
+                    </button>
+                    <div
+                      className="custom-slider-container"
+                      onPointerDown={handleVolumePointerDown}
+                      style={{ width: '60px', height: '24px' }}
+                    >
+                      <div className="custom-slider-track" />
+                      <div className="custom-slider-fill" style={{ width: `${(isMuted ? 0 : volume) * 100}%` }} />
+                      <div className="custom-slider-thumb" style={{ left: `calc(${(isMuted ? 0 : volume) * 100}% - 7px)` }} />
+                    </div>
+                  </div>
+
+                  {/* Scrubber */}
+                  <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                    <span style={{ fontSize: docPipWindow ? '0.7rem' : '0.8rem', color: 'var(--text-secondary)', fontFamily: 'monospace' }}>{formatTime(progress)}</span>
+
+                    {/* Custom Track */}
+                    <div
+                      className="custom-slider-container"
+                      onPointerDown={handlePointerDown}
+                      style={{ flex: 1, height: '24px' }}
+                    >
+                      <div className="custom-slider-track" />
+
+                      <div className="custom-slider-fill" style={{
+                        width: `${duration ? (progress / duration) * 100 : 0}%`,
+                        // eslint-disable-next-line react-hooks/refs
+                        transition: isScrubbingRef.current ? 'height 0.2s ease' : 'width 0.25s linear, height 0.2s ease'
+                      }} />
+
+                      <div className="custom-slider-thumb" style={{
+                        left: `calc(${duration ? (progress / duration) * 100 : 0}% - 7px)`,
+                        // eslint-disable-next-line react-hooks/refs
+                        transition: isScrubbingRef.current ? 'transform 0.2s ease' : 'left 0.25s linear, transform 0.2s ease',
+                        willChange: 'left, transform'
+                      }} />
+                    </div>
+
+                    <span style={{ fontSize: docPipWindow ? '0.7rem' : '0.8rem', color: 'var(--text-secondary)', fontFamily: 'monospace' }}>{formatTime(duration)}</span>
+                  </div>
+
+                  {/* Settings & Fullscreen */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: docPipWindow ? '0.5rem' : '1rem' }}>
+                    <button style={{ background: 'none', border: 'none', color: 'var(--text-primary)', cursor: 'not-allowed', opacity: 0.3, display: 'flex', alignItems: 'center' }} title="Subtitles (Unavailable)">
+                      <Subtitles size={docPipWindow ? 14 : 18} />
+                    </button>
+                    <div style={{ position: 'relative' }}>
+                      <button onClick={() => setShowSettings(!showSettings)} style={{ background: 'none', border: 'none', color: showSettings ? 'var(--primary-color)' : 'var(--text-primary)', cursor: 'pointer', opacity: showSettings ? 1 : 0.8, display: 'flex', alignItems: 'center', transition: 'var(--transition)' }} onMouseEnter={(e) => e.currentTarget.style.opacity = '1'} onMouseLeave={(e) => e.currentTarget.style.opacity = showSettings ? '1' : '0.8'}>
+                        <Settings size={docPipWindow ? 14 : 18} />
+                      </button>
+                      <AnimatePresence>
+                        {showSettings && (
+                          <motion.div
+                            layout
+                            initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                            transition={{ layout: { type: "spring", bounce: 0, duration: 0.3 }, opacity: { duration: 0.2 } }}
+                            ref={settingsPanelRef}
+                            style={{
+                              position: 'absolute', bottom: 'calc(100% + 1.5rem)', right: -10,
+                              background: 'var(--bg-darker-alpha-90)', backdropFilter: 'blur(12px)',
+                              border: '1px solid var(--glass-border)', borderRadius: '12px',
+                              padding: docPipWindow ? '0.25rem' : '0.5rem', minWidth: docPipWindow ? '140px' : '180px',
+                              boxShadow: '0 10px 30px var(--black-50)',
+                              overflow: 'hidden',
+                              zIndex: 999999
+                            }}
+                          >
+                            <AnimatePresence mode={docPipWindow ? "wait" : "popLayout"} initial={false}>
+                              {settingsView === 'main' ? (
+                                <motion.div
+                                  key="main"
+                                  initial={{ x: '-100%', opacity: 0 }} animate={{ x: 0, opacity: 1 }} exit={{ x: '-100%', opacity: 0 }} transition={{ duration: 0.25, ease: 'easeOut' }}
+                                  style={{ display: 'flex', flexDirection: 'column', width: 'max-content', gap: '0.25rem' }}
+                                >
+                                  <button
+                                    onClick={() => setSettingsView('skip_duration')}
+                                    style={{
+                                      background: 'transparent', color: 'var(--text-primary)', border: 'none',
+                                      padding: docPipWindow ? '0.35rem 0.5rem' : '0.5rem 0.75rem', borderRadius: '8px',
+                                      cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1.5rem',
+                                      fontSize: docPipWindow ? '0.7rem' : '0.8rem',
+                                      transition: 'background-color 0.2s ease',
+                                      minWidth: docPipWindow ? '180px' : '240px', whiteSpace: 'nowrap'
+                                    }}
+                                    onMouseEnter={(e) => e.currentTarget.style.background = 'var(--white-5)'}
+                                    onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                                  >
+                                    <span style={{ transform: 'translateY(1px)' }}>Skip Duration</span>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-secondary)' }}>
+                                      <span style={{ transform: 'translateY(1px)' }}>{jumpStep}s</span>
+                                      <ChevronRight size={14} />
+                                    </div>
+                                  </button>
+
+                                  <button
+                                    onClick={() => setSettingsView('playback_speed')}
+                                    style={{
+                                      background: 'transparent', color: 'var(--text-primary)', border: 'none',
+                                      padding: docPipWindow ? '0.35rem 0.5rem' : '0.5rem 0.75rem', borderRadius: '8px',
+                                      cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1.5rem',
+                                      fontSize: docPipWindow ? '0.7rem' : '0.8rem',
+                                      transition: 'background-color 0.2s ease',
+                                      minWidth: docPipWindow ? '180px' : '240px', whiteSpace: 'nowrap'
+                                    }}
+                                    onMouseEnter={(e) => e.currentTarget.style.background = 'var(--white-5)'}
+                                    onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                                  >
+                                    <span style={{ transform: 'translateY(1px)' }}>Playback Speed</span>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-secondary)' }}>
+                                      <span style={{ transform: 'translateY(1px)' }}>{playbackSpeed === 1 ? 'Normal' : `${playbackSpeed}x`}</span>
+                                      <ChevronRight size={14} />
+                                    </div>
+                                  </button>
+                                </motion.div>
+                              ) : settingsView === 'skip_duration' ? (
+                                <motion.div
+                                  key="skip"
+                                  initial={{ x: '100%', opacity: 0 }} animate={{ x: 0, opacity: 1 }} exit={{ x: '100%', opacity: 0 }} transition={{ duration: 0.25, ease: 'easeOut' }}
+                                  style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', width: 'max-content' }}
+                                >
+                                  <button
+                                    onClick={() => setSettingsView('main')}
+                                    style={{
+                                      background: 'transparent', color: 'var(--text-secondary)', border: 'none',
+                                      padding: docPipWindow ? '0.35rem 0.5rem' : '0.5rem 0.75rem', borderRadius: '8px',
+                                      cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem',
+                                      fontSize: docPipWindow ? '0.7rem' : '0.8rem', marginBottom: '0.25rem',
+                                      transition: 'color 0.2s ease', whiteSpace: 'nowrap'
+                                    }}
+                                    onMouseEnter={(e) => e.currentTarget.style.color = 'var(--text-primary)'}
+                                    onMouseLeave={(e) => e.currentTarget.style.color = 'var(--text-secondary)'}
+                                  >
+                                    <ChevronLeft size={14} />
+                                    <span style={{ transform: 'translateY(1px)' }}>Skip Duration</span>
+                                  </button>
+
+                                  <div style={{ width: '100%', height: '1px', background: 'var(--glass-border)', margin: '0.25rem 0' }} />
+
+                                  <div className="settings-options-grid">
+                                    {[5, 10, 15, 30].map(val => (
+                                      <button
+                                        key={val}
+                                        onClick={() => { setJumpStep(val); Cache.saveSettings({ jumpStep: val }); setSettingsView('main'); setShowSettings(false); }}
+                                        style={{
+                                          background: jumpStep === val ? 'var(--primary-color)' : 'transparent',
+                                          color: jumpStep === val ? 'var(--white)' : 'var(--text-primary)',
+                                          border: 'none', padding: docPipWindow ? '0.35rem 0.5rem' : '0.5rem 0.75rem', borderRadius: '8px',
+                                          cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                                          fontSize: docPipWindow ? '0.7rem' : '0.8rem',
+                                          transition: 'background-color 0.2s ease'
+                                        }}
+                                        onMouseEnter={(e) => { if (jumpStep !== val) e.currentTarget.style.background = 'var(--white-5)' }}
+                                        onMouseLeave={(e) => { if (jumpStep !== val) e.currentTarget.style.background = 'transparent' }}
+                                      >
+                                        <span style={{ transform: 'translateY(1px)' }}>{val} seconds</span>
+                                        {jumpStep === val && <Check size={14} />}
+                                      </button>
+                                    ))}
+                                  </div>
+                                </motion.div>
+                              ) : (
+                                <motion.div
+                                  key="speed"
+                                  initial={{ x: '100%', opacity: 0 }} animate={{ x: 0, opacity: 1 }} exit={{ x: '100%', opacity: 0 }} transition={{ duration: 0.25, ease: 'easeOut' }}
+                                  style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', width: 'max-content' }}
+                                >
+                                  <button
+                                    onClick={() => setSettingsView('main')}
+                                    style={{
+                                      background: 'transparent', color: 'var(--text-secondary)', border: 'none',
+                                      padding: docPipWindow ? '0.35rem 0.5rem' : '0.5rem 0.75rem', borderRadius: '8px',
+                                      cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem',
+                                      fontSize: docPipWindow ? '0.7rem' : '0.8rem', marginBottom: '0.25rem',
+                                      transition: 'color 0.2s ease', whiteSpace: 'nowrap'
+                                    }}
+                                    onMouseEnter={(e) => e.currentTarget.style.color = 'var(--text-primary)'}
+                                    onMouseLeave={(e) => e.currentTarget.style.color = 'var(--text-secondary)'}
+                                  >
+                                    <ChevronLeft size={14} />
+                                    <span style={{ transform: 'translateY(1px)' }}>Playback Speed</span>
+                                  </button>
+
+                                  <div style={{ width: '100%', height: '1px', background: 'var(--glass-border)', margin: '0.25rem 0' }} />
+
+                                  <div className="settings-options-grid">
+                                    {[0.25, 0.5, 0.75, 1, 1.25, 1.5, 2].map(val => (
+                                      <button
+                                        key={val}
+                                        onClick={() => {
+                                          setPlaybackSpeed(val);
+                                          if (videoRef.current) videoRef.current.playbackRate = val;
+                                          Cache.saveSettings({ playbackSpeed: val });
+                                          setSettingsView('main');
+                                          setShowSettings(false);
+                                        }}
+                                        style={{
+                                          background: playbackSpeed === val ? 'var(--primary-color)' : 'transparent',
+                                          color: playbackSpeed === val ? 'var(--white)' : 'var(--text-primary)',
+                                          border: 'none', padding: docPipWindow ? '0.35rem 0.5rem' : '0.5rem 0.75rem', borderRadius: '8px',
+                                          cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                                          fontSize: docPipWindow ? '0.7rem' : '0.8rem',
+                                          transition: 'background-color 0.2s ease'
+                                        }}
+                                        onMouseEnter={(e) => { if (playbackSpeed !== val) e.currentTarget.style.background = 'var(--white-5)' }}
+                                        onMouseLeave={(e) => { if (playbackSpeed !== val) e.currentTarget.style.background = 'transparent' }}
+                                      >
+                                        <span style={{ transform: 'translateY(1px)' }}>{val === 1 ? 'Normal' : `${val}x`}</span>
+                                        {playbackSpeed === val && <Check size={14} />}
+                                      </button>
+                                    ))}
+                                  </div>
+                                </motion.div>
+                              )}
+                            </AnimatePresence>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                    <button onClick={togglePiP} style={{ background: 'none', border: 'none', color: 'var(--text-primary)', cursor: 'pointer', opacity: 0.8, display: 'flex', alignItems: 'center' }} onMouseEnter={(e) => e.currentTarget.style.opacity = '1'} onMouseLeave={(e) => e.currentTarget.style.opacity = '0.8'} title={(docPipWindow || isPiP) ? "Restore Player" : "Picture in Picture"}>
+                      {(docPipWindow || isPiP) ? <PictureInPicture2 size={docPipWindow ? 14 : 18} /> : <PictureInPicture size={docPipWindow ? 14 : 18} />}
+                    </button>
+                    <button onClick={toggleFullscreen} style={{ background: 'none', border: 'none', color: 'var(--text-primary)', cursor: 'pointer', opacity: 0.8, display: 'flex', alignItems: 'center' }} onMouseEnter={(e) => e.currentTarget.style.opacity = '1'} onMouseLeave={(e) => e.currentTarget.style.opacity = '0.8'} title="Fullscreen">
+                      <Maximize size={docPipWindow ? 14 : 18} />
+                    </button>
+                  </div>
+
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </>
       )}
     </motion.div>
@@ -1126,7 +1149,7 @@ export default function GlobalPlayer() {
       <>
         {createPortal(content, docPipWindow.document.getElementById('pip-root')!)}
         {isPlayerRoute && (
-          <div 
+          <div
             onClick={(e) => {
               // don't toggle if they clicked a button
               if ((e.target as HTMLElement).closest('button')) return;
@@ -1142,7 +1165,7 @@ export default function GlobalPlayer() {
             </div>
             {isPlaying ? <PictureInPicture size={64} style={{ opacity: 0.5, marginBottom: '1rem', color: 'var(--text-secondary)' }} /> : <Pause size={64} style={{ opacity: 0.5, marginBottom: '1rem', color: 'var(--text-secondary)' }} />}
             <h2 style={{ marginBottom: '2rem', color: 'var(--text-secondary)', transition: 'color 0.3s ease' }}>{isPlaying ? "Playing in Custom Picture-in-Picture" : "Paused in Custom Picture-in-Picture"}</h2>
-            <button 
+            <button
               className="liquid-button active-liquid-glass"
               style={{ padding: '1rem 2.5rem', fontSize: '1.1rem' }}
               // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -1159,3 +1182,4 @@ export default function GlobalPlayer() {
 
   return content;
 }
+
