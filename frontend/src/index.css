@@ -85,6 +85,8 @@
   --primary-color: #8b5cf6;
   --primary-color-glow: #8b5cf680;
   --error-color: #ef4444;
+  --error-color-bright: #ff3b30;
+  --error-color-hover: #ff453a;
   --success-color: #10b981;
   --success-alpha-10: #10b9811a;
   --success-alpha-20: #10b98133;
@@ -384,14 +386,14 @@ body {
 
 .logout-btn {
   background: var(--error-alpha-5) !important;
-  color: #ff3b30 !important;
+  color: var(--error-color-bright) !important;
   border: 1px solid transparent !important;
   transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
 }
 
 .logout-btn:hover {
   background: var(--error-alpha-10) !important;
-  color: #ff453a !important;
+  color: var(--error-color-hover) !important;
   transform: translateX(4px) translateZ(0) !important;
   border-color: var(--error-alpha-20) !important;
   box-shadow: 0 4px 12px var(--error-alpha-10) !important;
@@ -634,14 +636,14 @@ body.search-open *::-webkit-scrollbar-track:hover {
 /* Danger Liquid Button (like logout) */
 .danger-liquid-button {
   background: var(--error-alpha-5) !important;
-  color: #ff3b30 !important;
+  color: var(--error-color-bright) !important;
   border: 1px solid transparent !important;
   transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
 }
 
 .danger-liquid-button:hover {
   background: var(--error-alpha-10) !important;
-  color: #ff453a !important;
+  color: var(--error-color-hover) !important;
   transform: translateY(-2px) translateZ(0) !important;
   border-color: var(--error-alpha-20) !important;
   box-shadow: 0 4px 12px var(--error-alpha-10) !important;
