@@ -123,8 +123,29 @@ app.get('/api/intro/:filename', authenticateToken, (req, res) => {
   }
 });
 
-// Simple Memory Cache for TMDB data
-const tmdbCache = {};
+// Persistent Cache for local TMDB data
+const TMDB_CACHE_FILE = path.join(__dirname, 'tmdb_cache.json');
+let tmdbCache = { movies: {}, discover: null, search: {} };
+if (fs.existsSync(TMDB_CACHE_FILE)) {
+  try {
+    const data = JSON.parse(fs.readFileSync(TMDB_CACHE_FILE, 'utf8'));
+    if (data.movies) {
+      tmdbCache = data;
+    } else {
+      tmdbCache.movies = data; // migrate old cache
+    }
+  } catch (e) {
+    console.error('Failed to parse tmdb_cache.json', e);
+  }
+}
+
+app.post('/api/admin/clear-cache', authenticateToken, (req, res) => {
+  tmdbCache = { movies: {}, discover: null, search: {} };
+  if (fs.existsSync(TMDB_CACHE_FILE)) {
+    fs.unlinkSync(TMDB_CACHE_FILE);
+  }
+  res.json({ success: true });
+});
 
 app.get('/api/movies', authenticateToken, async (req, res) => {
   fs.readdir(MOVIES_DIR, async (err, files) => {
@@ -166,8 +187,8 @@ app.get('/api/movies', authenticateToken, async (req, res) => {
       if (!TMDB_API_KEY) return movieObj;
 
       const cacheKey = queryTitle.toLowerCase();
-      if (tmdbCache[cacheKey]) {
-        return { ...movieObj, ...tmdbCache[cacheKey] };
+      if (tmdbCache.movies[cacheKey]) {
+        return { ...movieObj, ...tmdbCache.movies[cacheKey] };
       }
 
       try {
@@ -195,7 +216,8 @@ app.get('/api/movies', authenticateToken, async (req, res) => {
             plot: match.overview || movieObj.plot,
             genres: genres.length > 0 ? genres : ['Uncategorized']
           };
-          tmdbCache[cacheKey] = enriched;
+          tmdbCache.movies[cacheKey] = enriched;
+          fs.writeFileSync(TMDB_CACHE_FILE, JSON.stringify(tmdbCache, null, 2));
           return { ...movieObj, ...enriched };
         }
       } catch (err) {
@@ -259,6 +281,11 @@ app.get('/api/discover', authenticateToken, async (req, res) => {
     return res.status(400).json({ error: 'TMDB API Key not configured' });
   }
 
+  // Cache discover results indefinitely
+  if (tmdbCache.discover) {
+    return res.json(tmdbCache.discover);
+  }
+
   try {
     const tmdbRes = await axios.get(`https://api.themoviedb.org/3/trending/movie/day?api_key=${TMDB_API_KEY}`);
     const results = tmdbRes.data.results.map(match => ({
@@ -267,6 +294,8 @@ app.get('/api/discover', authenticateToken, async (req, res) => {
       poster_url: match.poster_path ? `https://wsrv.nl/?url=image.tmdb.org/t/p/w500${match.poster_path}` : null,
       plot: match.overview
     }));
+    tmdbCache.discover = results;
+    fs.writeFileSync(TMDB_CACHE_FILE, JSON.stringify(tmdbCache, null, 2));
     res.json(results);
   } catch (err) {
     console.error('TMDB Discover Error:', err.message);
@@ -358,9 +387,17 @@ app.get('/api/proxy-image', async (req, res) => {
     res.status(500).end();
   }
 });
+
 app.get('/api/search', authenticateToken, async (req, res) => {
   const query = req.query.q;
   if (!query) return res.status(400).json({ error: 'Missing query' });
+
+  const cacheKey = query.toLowerCase();
+  
+  // Cache search results indefinitely
+  if (tmdbCache.search[cacheKey]) {
+    return res.json(tmdbCache.search[cacheKey]);
+  }
 
   const TMDB_API_KEY = process.env.TMDB_API_KEY;
   if (!TMDB_API_KEY) {
@@ -396,6 +433,8 @@ app.get('/api/search', authenticateToken, async (req, res) => {
       return 0; // maintain TMDB's relevance sorting for the rest
     });
 
+    tmdbCache.search[cacheKey] = results;
+    fs.writeFileSync(TMDB_CACHE_FILE, JSON.stringify(tmdbCache, null, 2));
     res.json(results);
   } catch (err) {
     console.error('TMDB Search Error:', err.message);
@@ -406,6 +445,3 @@ app.get('/api/search', authenticateToken, async (req, res) => {
 app.listen(PORT, () => {
   console.log(`Backend server running on http://localhost:${PORT}`);
 });
-
-
-
